@@ -26,8 +26,8 @@ class zclient(object):
 
     ZMQ_DATA_PORT = "5556"
     ZMQ_CNTL_PORT = "5555"
-    TOPIC_DATA = "data"
-    TOPIC_META = "meta"
+    TOPIC_DATA = b"data"
+    TOPIC_META = b"meta"
 
     def __init__(self, connect_str):
         self.__context = zmq.Context()
