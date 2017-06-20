@@ -17,8 +17,7 @@ import matplotlib.pyplot as plt
 import sys
 from matplotlib.backends.qt_compat import QtWidgets, QtCore
 
-
-import datetime, time
+import datetime
 
 
 class zclient(object):
