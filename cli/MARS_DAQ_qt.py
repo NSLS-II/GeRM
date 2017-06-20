@@ -197,6 +197,7 @@ def on_trig():
     plt.title('addr hist')
     plt.grid()
 
+    plt.draw()
     plt.show()
 
 
