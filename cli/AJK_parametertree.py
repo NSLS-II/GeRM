@@ -6,9 +6,15 @@ demonstrates a variety of different parameter types (int, float, list, etc.)
 as well as some customized parameter types
 
 """
+from __future__ import division
+from __future__ import print_function
 
 
 #import initExample ## Add path to library (just for examples; you do not need this)
+from builtins import str
+from builtins import range
+from past.utils import old_div
+from builtins import object
 import time as tm
 
 import numpy as np
@@ -112,224 +118,224 @@ params = [
             {'name': 'SM', 'type': 'bool', 'value': True, 'tip':"1- front end shutdown"},
             {'name': 'SEL', 'type': 'bool', 'value': True, 'tip':"1- shaper out on mon 0- leakage on mon"},
             {'name': 'DA0:DA2', 'type': 'list', 'values': [0,1,2,3], 'value': 0, 'tip':"Threshold trim DAC"},
-            {'name': 'DP0:DP3', 'type': 'list', 'values': range(0,15), 'value': 0, 'tip':"Pile-up rejection DAC"},
+            {'name': 'DP0:DP3', 'type': 'list', 'values': list(range(0,15)), 'value': 0, 'tip':"Pile-up rejection DAC"},
         ]},
         {'name': 'Ch1','expanded': False, 'type': 'group', 'children': [
             {'name': 'ST', 'type': 'bool', 'value': False},
             {'name': 'SM', 'type': 'bool', 'value': True},
             {'name': 'SEL', 'type': 'bool', 'value': True},
             {'name': 'DA0:DA2', 'type': 'list', 'values': [0,1,2,3], 'value': 0, 'tip' : "Threshold trim DAC"},
-            {'name': 'DP0:DP3', 'type': 'list', 'values': range(0,15), 'value': 0, 'tip':"Pile-up rejection DAC"},
+            {'name': 'DP0:DP3', 'type': 'list', 'values': list(range(0,15)), 'value': 0, 'tip':"Pile-up rejection DAC"},
         ]},
         {'name': 'Ch2','expanded': False, 'type': 'group', 'children': [
             {'name': 'ST', 'type': 'bool', 'value': False},
             {'name': 'SM', 'type': 'bool', 'value': True},
             {'name': 'SEL', 'type': 'bool', 'value': True},
             {'name': 'DA0:DA2', 'type': 'list', 'values': [0,1,2,3], 'value': 0, 'tip':"Threshold trim DAC"},
-            {'name': 'DP0:DP3', 'type': 'list', 'values': range(0,15), 'value': 0, 'tip':"Pile-up rejection DAC"},
+            {'name': 'DP0:DP3', 'type': 'list', 'values': list(range(0,15)), 'value': 0, 'tip':"Pile-up rejection DAC"},
         ]},
         {'name': 'Ch3','expanded': False, 'type': 'group', 'children': [
             {'name': 'ST', 'type': 'bool', 'value': False},
             {'name': 'SM', 'type': 'bool', 'value': True},
             {'name': 'SEL', 'type': 'bool', 'value': True},
             {'name': 'DA0:DA2', 'type': 'list', 'values': [0,1,2,3], 'value': 0, 'tip':"Threshold trim DAC"},
-            {'name': 'DP0:DP3', 'type': 'list', 'values': range(0,15), 'value': 0, 'tip':"Pile-up rejection DAC"},
+            {'name': 'DP0:DP3', 'type': 'list', 'values': list(range(0,15)), 'value': 0, 'tip':"Pile-up rejection DAC"},
         ]},
         {'name': 'Ch4','expanded': False, 'type': 'group', 'children': [
             {'name': 'ST', 'type': 'bool', 'value': False},
             {'name': 'SM', 'type': 'bool', 'value': True},
             {'name': 'SEL', 'type': 'bool', 'value': True},
             {'name': 'DA0:DA2', 'type': 'list', 'values': [0,1,2,3], 'value': 0, 'tip':"Threshold trim DAC"},
-            {'name': 'DP0:DP3', 'type': 'list', 'values': range(0,15), 'value': 0, 'tip':"Pile-up rejection DAC"},
+            {'name': 'DP0:DP3', 'type': 'list', 'values': list(range(0,15)), 'value': 0, 'tip':"Pile-up rejection DAC"},
         ]},
         {'name': 'Ch5','expanded': False, 'type': 'group', 'children': [
             {'name': 'ST', 'type': 'bool', 'value': False},
             {'name': 'SM', 'type': 'bool', 'value': True},
             {'name': 'SEL', 'type': 'bool', 'value': True},
             {'name': 'DA0:DA2', 'type': 'list', 'values': [0,1,2,3], 'value': 0, 'tip':"Threshold trim DAC"},
-            {'name': 'DP0:DP3', 'type': 'list', 'values': range(0,15), 'value': 0, 'tip':"Pile-up rejection DAC"},
+            {'name': 'DP0:DP3', 'type': 'list', 'values': list(range(0,15)), 'value': 0, 'tip':"Pile-up rejection DAC"},
         ]},
         {'name': 'Ch6','expanded': False, 'type': 'group', 'children': [
             {'name': 'ST', 'type': 'bool', 'value': False},
             {'name': 'SM', 'type': 'bool', 'value': True},
             {'name': 'SEL', 'type': 'bool', 'value': True},
             {'name': 'DA0:DA2', 'type': 'list', 'values': [0,1,2,3], 'value': 0, 'tip' : "Threshold trim DAC"},
-            {'name': 'DP0:DP3', 'type': 'list', 'values': range(0,15), 'value': 0, 'tip':"Pile-up rejection DAC"},
+            {'name': 'DP0:DP3', 'type': 'list', 'values': list(range(0,15)), 'value': 0, 'tip':"Pile-up rejection DAC"},
         ]},
         {'name': 'Ch7','expanded': False, 'type': 'group', 'children': [
             {'name': 'ST', 'type': 'bool', 'value': False},
             {'name': 'SM', 'type': 'bool', 'value': True},
             {'name': 'SEL', 'type': 'bool', 'value': True},
             {'name': 'DA0:DA2', 'type': 'list', 'values': [0,1,2,3], 'value': 0, 'tip':"Threshold trim DAC"},
-            {'name': 'DP0:DP3', 'type': 'list', 'values': range(0,15), 'value': 0, 'tip':"Pile-up rejection DAC"},
+            {'name': 'DP0:DP3', 'type': 'list', 'values': list(range(0,15)), 'value': 0, 'tip':"Pile-up rejection DAC"},
         ]},
         {'name': 'Ch8','expanded': False, 'type': 'group', 'children': [
             {'name': 'ST', 'type': 'bool', 'value': False},
             {'name': 'SM', 'type': 'bool', 'value': True},
             {'name': 'SEL', 'type': 'bool', 'value': True},
             {'name': 'DA0:DA2', 'type': 'list', 'values': [0,1,2,3], 'value': 0, 'tip':"Threshold trim DAC"},
-            {'name': 'DP0:DP3', 'type': 'list', 'values': range(0,15), 'value': 0, 'tip':"Pile-up rejection DAC"},
+            {'name': 'DP0:DP3', 'type': 'list', 'values': list(range(0,15)), 'value': 0, 'tip':"Pile-up rejection DAC"},
         ]},
         {'name': 'Ch9','expanded': False, 'type': 'group', 'children': [
             {'name': 'ST', 'type': 'bool', 'value': False},
             {'name': 'SM', 'type': 'bool', 'value': True},
             {'name': 'SEL', 'type': 'bool', 'value': True},
             {'name': 'DA0:DA2', 'type': 'list', 'values': [0,1,2,3], 'value': 0, 'tip':"Threshold trim DAC"},
-            {'name': 'DP0:DP3', 'type': 'list', 'values': range(0,15), 'value': 0, 'tip':"Pile-up rejection DAC"},
+            {'name': 'DP0:DP3', 'type': 'list', 'values': list(range(0,15)), 'value': 0, 'tip':"Pile-up rejection DAC"},
         ]},
         {'name': 'Ch10','expanded': False, 'type': 'group', 'children': [
             {'name': 'ST', 'type': 'bool', 'value': False},
             {'name': 'SM', 'type': 'bool', 'value': True},
             {'name': 'SEL', 'type': 'bool', 'value': True},
             {'name': 'DA0:DA2', 'type': 'list', 'values': [0,1,2,3], 'value': 0, 'tip':"Threshold trim DAC"},
-            {'name': 'DP0:DP3', 'type': 'list', 'values': range(0,15), 'value': 0, 'tip':"Pile-up rejection DAC"},
+            {'name': 'DP0:DP3', 'type': 'list', 'values': list(range(0,15)), 'value': 0, 'tip':"Pile-up rejection DAC"},
         ]},
         {'name': 'Ch11','expanded': False, 'type': 'group', 'children': [
             {'name': 'ST', 'type': 'bool', 'value': False},
             {'name': 'SM', 'type': 'bool', 'value': True},
             {'name': 'SEL', 'type': 'bool', 'value': True},
             {'name': 'DA0:DA2', 'type': 'list', 'values': [0,1,2,3], 'value': 0, 'tip' : "Threshold trim DAC"},
-            {'name': 'DP0:DP3', 'type': 'list', 'values': range(0,15), 'value': 0, 'tip':"Pile-up rejection DAC"},
+            {'name': 'DP0:DP3', 'type': 'list', 'values': list(range(0,15)), 'value': 0, 'tip':"Pile-up rejection DAC"},
         ]},
         {'name': 'Ch12','expanded': False, 'type': 'group', 'children': [
             {'name': 'ST', 'type': 'bool', 'value': False},
             {'name': 'SM', 'type': 'bool', 'value': True},
             {'name': 'SEL', 'type': 'bool', 'value': True},
             {'name': 'DA0:DA2', 'type': 'list', 'values': [0,1,2,3], 'value': 0, 'tip':"Threshold trim DAC"},
-            {'name': 'DP0:DP3', 'type': 'list', 'values': range(0,15), 'value': 0, 'tip':"Pile-up rejection DAC"},
+            {'name': 'DP0:DP3', 'type': 'list', 'values': list(range(0,15)), 'value': 0, 'tip':"Pile-up rejection DAC"},
         ]},
         {'name': 'Ch13','expanded': False, 'type': 'group', 'children': [
             {'name': 'ST', 'type': 'bool', 'value': False},
             {'name': 'SM', 'type': 'bool', 'value': True},
             {'name': 'SEL', 'type': 'bool', 'value': True},
             {'name': 'DA0:DA2', 'type': 'list', 'values': [0,1,2,3], 'value': 0, 'tip':"Threshold trim DAC"},
-            {'name': 'DP0:DP3', 'type': 'list', 'values': range(0,15), 'value': 0, 'tip':"Pile-up rejection DAC"},
+            {'name': 'DP0:DP3', 'type': 'list', 'values': list(range(0,15)), 'value': 0, 'tip':"Pile-up rejection DAC"},
         ]},
         {'name': 'Ch14','expanded': False, 'type': 'group', 'children': [
             {'name': 'ST', 'type': 'bool', 'value': False},
             {'name': 'SM', 'type': 'bool', 'value': True},
             {'name': 'SEL', 'type': 'bool', 'value': True},
             {'name': 'DA0:DA2', 'type': 'list', 'values': [0,1,2,3], 'value': 0, 'tip':"Threshold trim DAC"},
-            {'name': 'DP0:DP3', 'type': 'list', 'values': range(0,15), 'value': 0, 'tip':"Pile-up rejection DAC"},
+            {'name': 'DP0:DP3', 'type': 'list', 'values': list(range(0,15)), 'value': 0, 'tip':"Pile-up rejection DAC"},
         ]},
         {'name': 'Ch15','expanded': False, 'type': 'group', 'children': [
             {'name': 'ST', 'type': 'bool', 'value': False},
             {'name': 'SM', 'type': 'bool', 'value': True},
             {'name': 'SEL', 'type': 'bool', 'value': True},
             {'name': 'DA0:DA2', 'type': 'list', 'values': [0,1,2,3], 'value': 0, 'tip':"Threshold trim DAC"},
-            {'name': 'DP0:DP3', 'type': 'list', 'values': range(0,15), 'value': 0, 'tip':"Pile-up rejection DAC"},
+            {'name': 'DP0:DP3', 'type': 'list', 'values': list(range(0,15)), 'value': 0, 'tip':"Pile-up rejection DAC"},
         ]},
         {'name': 'Ch16','expanded': False, 'type': 'group', 'children': [
             {'name': 'ST', 'type': 'bool', 'value': False},
             {'name': 'SM', 'type': 'bool', 'value': True},
             {'name': 'SEL', 'type': 'bool', 'value': True},
             {'name': 'DA0:DA2', 'type': 'list', 'values': [0,1,2,3], 'value': 0, 'tip' : "Threshold trim DAC"},
-            {'name': 'DP0:DP3', 'type': 'list', 'values': range(0,15), 'value': 0, 'tip':"Pile-up rejection DAC"},
+            {'name': 'DP0:DP3', 'type': 'list', 'values': list(range(0,15)), 'value': 0, 'tip':"Pile-up rejection DAC"},
         ]},
         {'name': 'Ch17','expanded': False, 'type': 'group', 'children': [
             {'name': 'ST', 'type': 'bool', 'value': False},
             {'name': 'SM', 'type': 'bool', 'value': True},
             {'name': 'SEL', 'type': 'bool', 'value': True},
             {'name': 'DA0:DA2', 'type': 'list', 'values': [0,1,2,3], 'value': 0, 'tip':"Threshold trim DAC"},
-            {'name': 'DP0:DP3', 'type': 'list', 'values': range(0,15), 'value': 0, 'tip':"Pile-up rejection DAC"},
+            {'name': 'DP0:DP3', 'type': 'list', 'values': list(range(0,15)), 'value': 0, 'tip':"Pile-up rejection DAC"},
         ]},
         {'name': 'Ch18','expanded': False, 'type': 'group', 'children': [
             {'name': 'ST', 'type': 'bool', 'value': False},
             {'name': 'SM', 'type': 'bool', 'value': True},
             {'name': 'SEL', 'type': 'bool', 'value': True},
             {'name': 'DA0:DA2', 'type': 'list', 'values': [0,1,2,3], 'value': 0, 'tip':"Threshold trim DAC"},
-            {'name': 'DP0:DP3', 'type': 'list', 'values': range(0,15), 'value': 0, 'tip':"Pile-up rejection DAC"},
+            {'name': 'DP0:DP3', 'type': 'list', 'values': list(range(0,15)), 'value': 0, 'tip':"Pile-up rejection DAC"},
         ]},
         {'name': 'Ch19','expanded': False, 'type': 'group', 'children': [
             {'name': 'ST', 'type': 'bool', 'value': False},
             {'name': 'SM', 'type': 'bool', 'value': True},
             {'name': 'SEL', 'type': 'bool', 'value': True},
             {'name': 'DA0:DA2', 'type': 'list', 'values': [0,1,2,3], 'value': 0, 'tip':"Threshold trim DAC"},
-            {'name': 'DP0:DP3', 'type': 'list', 'values': range(0,15), 'value': 0, 'tip':"Pile-up rejection DAC"},
+            {'name': 'DP0:DP3', 'type': 'list', 'values': list(range(0,15)), 'value': 0, 'tip':"Pile-up rejection DAC"},
         ]},
         {'name': 'Ch20','expanded': False, 'type': 'group', 'children': [
             {'name': 'ST', 'type': 'bool', 'value': False},
             {'name': 'SM', 'type': 'bool', 'value': True},
             {'name': 'SEL', 'type': 'bool', 'value': True},
             {'name': 'DA0:DA2', 'type': 'list', 'values': [0,1,2,3], 'value': 0, 'tip':"Threshold trim DAC"},
-            {'name': 'DP0:DP3', 'type': 'list', 'values': range(0,15), 'value': 0, 'tip':"Pile-up rejection DAC"},
+            {'name': 'DP0:DP3', 'type': 'list', 'values': list(range(0,15)), 'value': 0, 'tip':"Pile-up rejection DAC"},
         ]},
         {'name': 'Ch21','expanded': False, 'type': 'group', 'children': [
             {'name': 'ST', 'type': 'bool', 'value': False},
             {'name': 'SM', 'type': 'bool', 'value': True},
             {'name': 'SEL', 'type': 'bool', 'value': True},
             {'name': 'DA0:DA2', 'type': 'list', 'values': [0,1,2,3], 'value': 0, 'tip' : "Threshold trim DAC"},
-            {'name': 'DP0:DP3', 'type': 'list', 'values': range(0,15), 'value': 0, 'tip':"Pile-up rejection DAC"},
+            {'name': 'DP0:DP3', 'type': 'list', 'values': list(range(0,15)), 'value': 0, 'tip':"Pile-up rejection DAC"},
         ]},
         {'name': 'Ch22','expanded': False, 'type': 'group', 'children': [
             {'name': 'ST', 'type': 'bool', 'value': False},
             {'name': 'SM', 'type': 'bool', 'value': True},
             {'name': 'SEL', 'type': 'bool', 'value': True},
             {'name': 'DA0:DA2', 'type': 'list', 'values': [0,1,2,3], 'value': 0, 'tip':"Threshold trim DAC"},
-            {'name': 'DP0:DP3', 'type': 'list', 'values': range(0,15), 'value': 0, 'tip':"Pile-up rejection DAC"},
+            {'name': 'DP0:DP3', 'type': 'list', 'values': list(range(0,15)), 'value': 0, 'tip':"Pile-up rejection DAC"},
         ]},
         {'name': 'Ch23','expanded': False, 'type': 'group', 'children': [
             {'name': 'ST', 'type': 'bool', 'value': False},
             {'name': 'SM', 'type': 'bool', 'value': True},
             {'name': 'SEL', 'type': 'bool', 'value': True},
             {'name': 'DA0:DA2', 'type': 'list', 'values': [0,1,2,3], 'value': 0, 'tip':"Threshold trim DAC"},
-            {'name': 'DP0:DP3', 'type': 'list', 'values': range(0,15), 'value': 0, 'tip':"Pile-up rejection DAC"},
+            {'name': 'DP0:DP3', 'type': 'list', 'values': list(range(0,15)), 'value': 0, 'tip':"Pile-up rejection DAC"},
         ]},
         {'name': 'Ch24','expanded': False, 'type': 'group', 'children': [
             {'name': 'ST', 'type': 'bool', 'value': False},
             {'name': 'SM', 'type': 'bool', 'value': True},
             {'name': 'SEL', 'type': 'bool', 'value': True},
             {'name': 'DA0:DA2', 'type': 'list', 'values': [0,1,2,3], 'value': 0, 'tip':"Threshold trim DAC"},
-            {'name': 'DP0:DP3', 'type': 'list', 'values': range(0,15), 'value': 0, 'tip':"Pile-up rejection DAC"},
+            {'name': 'DP0:DP3', 'type': 'list', 'values': list(range(0,15)), 'value': 0, 'tip':"Pile-up rejection DAC"},
         ]},
         {'name': 'Ch25','expanded': False, 'type': 'group', 'children': [
             {'name': 'ST', 'type': 'bool', 'value': False},
             {'name': 'SM', 'type': 'bool', 'value': True},
             {'name': 'SEL', 'type': 'bool', 'value': True},
             {'name': 'DA0:DA2', 'type': 'list', 'values': [0,1,2,3], 'value': 0, 'tip':"Threshold trim DAC"},
-            {'name': 'DP0:DP3', 'type': 'list', 'values': range(0,15), 'value': 0, 'tip':"Pile-up rejection DAC"},
+            {'name': 'DP0:DP3', 'type': 'list', 'values': list(range(0,15)), 'value': 0, 'tip':"Pile-up rejection DAC"},
         ]},
         {'name': 'Ch26','expanded': False, 'type': 'group', 'children': [
             {'name': 'ST', 'type': 'bool', 'value': False},
             {'name': 'SM', 'type': 'bool', 'value': True},
             {'name': 'SEL', 'type': 'bool', 'value': True},
             {'name': 'DA0:DA2', 'type': 'list', 'values': [0,1,2,3], 'value': 0, 'tip' : "Threshold trim DAC"},
-            {'name': 'DP0:DP3', 'type': 'list', 'values': range(0,15), 'value': 0, 'tip':"Pile-up rejection DAC"},
+            {'name': 'DP0:DP3', 'type': 'list', 'values': list(range(0,15)), 'value': 0, 'tip':"Pile-up rejection DAC"},
         ]},
         {'name': 'Ch27','expanded': False, 'type': 'group', 'children': [
             {'name': 'ST', 'type': 'bool', 'value': False},
             {'name': 'SM', 'type': 'bool', 'value': True},
             {'name': 'SEL', 'type': 'bool', 'value': True},
             {'name': 'DA0:DA2', 'type': 'list', 'values': [0,1,2,3], 'value': 0, 'tip':"Threshold trim DAC"},
-            {'name': 'DP0:DP3', 'type': 'list', 'values': range(0,15), 'value': 0, 'tip':"Pile-up rejection DAC"},
+            {'name': 'DP0:DP3', 'type': 'list', 'values': list(range(0,15)), 'value': 0, 'tip':"Pile-up rejection DAC"},
         ]},
         {'name': 'Ch28','expanded': False, 'type': 'group', 'children': [
             {'name': 'ST', 'type': 'bool', 'value': False},
             {'name': 'SM', 'type': 'bool', 'value': True},
             {'name': 'SEL', 'type': 'bool', 'value': True},
             {'name': 'DA0:DA2', 'type': 'list', 'values': [0,1,2,3], 'value': 0, 'tip':"Threshold trim DAC"},
-            {'name': 'DP0:DP3', 'type': 'list', 'values': range(0,15), 'value': 0, 'tip':"Pile-up rejection DAC"},
+            {'name': 'DP0:DP3', 'type': 'list', 'values': list(range(0,15)), 'value': 0, 'tip':"Pile-up rejection DAC"},
         ]},
         {'name': 'Ch29','expanded': False, 'type': 'group', 'children': [
             {'name': 'ST', 'type': 'bool', 'value': False},
             {'name': 'SM', 'type': 'bool', 'value': True},
             {'name': 'SEL', 'type': 'bool', 'value': True},
             {'name': 'DA0:DA2', 'type': 'list', 'values': [0,1,2,3], 'value': 0, 'tip':"Threshold trim DAC"},
-            {'name': 'DP0:DP3', 'type': 'list', 'values': range(0,15), 'value': 0, 'tip':"Pile-up rejection DAC"},
+            {'name': 'DP0:DP3', 'type': 'list', 'values': list(range(0,15)), 'value': 0, 'tip':"Pile-up rejection DAC"},
         ]},
          {'name': 'Ch30','expanded': False, 'type': 'group', 'children': [
             {'name': 'ST', 'type': 'bool', 'value': False},
             {'name': 'SM', 'type': 'bool', 'value': True},
             {'name': 'SEL', 'type': 'bool', 'value': True},
             {'name': 'DA0:DA2', 'type': 'list', 'values': [0,1,2,3], 'value': 0, 'tip':"Threshold trim DAC"},
-            {'name': 'DP0:DP3', 'type': 'list', 'values': range(0,15), 'value': 0, 'tip':"Pile-up rejection DAC"},
+            {'name': 'DP0:DP3', 'type': 'list', 'values': list(range(0,15)), 'value': 0, 'tip':"Pile-up rejection DAC"},
         ]},
         {'name': 'Ch31','expanded': False, 'type': 'group', 'children': [
             {'name': 'ST', 'type': 'bool', 'value': False},
             {'name': 'SM', 'type': 'bool', 'value': True},
             {'name': 'SEL', 'type': 'bool', 'value': True},
             {'name': 'DA0:DA2', 'type': 'list', 'values': [0,1,2,3], 'value': 0, 'tip' : "Threshold trim DAC"},
-            {'name': 'DP0:DP3', 'type': 'list', 'values': range(0,15), 'value': 0, 'tip':"Pile-up rejection DAC"},
+            {'name': 'DP0:DP3', 'type': 'list', 'values': list(range(0,15)), 'value': 0, 'tip':"Pile-up rejection DAC"},
         ]},
      ]},
         {'name': 'Save/Restore functionality', 'type': 'group', 'children': [
@@ -355,7 +361,7 @@ params_2 = [
         {'name': 'SP', 'type': 'bool', 'value': True, 'tip': "0- neg charge, 1- pos charge"},
         {'name': 'SLH', 'type': 'bool', 'value': True, 'tip': "0- leakage current set by SL, 1- leakage current X 4"},
         {'name': 'Gain', 'type': 'list', 'values': [0,1,2,3], 'value': 2, 'tip':"0-600mv/fc,1-1200,2-1800,3-3600"},
-        {'name': 'C0:C4', 'type': 'list', 'values': range(0, 31), 'value': 21, 'tip':"M0=1-Channel monitor M0=0 other monitor"},
+        {'name': 'C0:C4', 'type': 'list', 'values': list(range(0, 31)), 'value': 21, 'tip':"M0=1-Channel monitor M0=0 other monitor"},
         {'name': 'SS0:SS1', 'type': 'list', 'values': [0,1,2,3], 'value': 0, 'tip':"Multi fire suppression tiem 0-250nsec 1-1usec 2-500nsec 3-2usec"},
         {'name': 'TR0:TR1', 'type': 'list', 'values': [0,1,2,3], 'value': 1, 'tip':"RT 0/1: 0-1/3usec 1-2/6usec 2-3/9usec 3- 4/12usec"},
         {'name': 'SSE', 'type': 'bool', 'value': False, 'tip': "1- Enable multiple fire rejection"},
@@ -432,10 +438,10 @@ p2.sigTreeStateChanged.connect(change_2)
 
 
 def valueChanging(param, value):
-    print("Value changing (not finalized):", param, value)
+    print(("Value changing (not finalized):", param, value))
 
 def valueChanging_2(param_2, value):
-    print("Value changing (not finalized):", param_2, value)
+    print(("Value changing (not finalized):", param_2, value))
 
 # Too lazy for recursion:
 for child in p.children():
@@ -483,7 +489,7 @@ def save():
 
     mars_msw = (tm | sbm | saux | sp | slh | gn | c0 | ss | tr | sse| spur | rt | t0 | sl | sb | sbn | m1 | m0 | senf2 | senf1 | rm  | pb)
 
-    print "MARS MSW: %X" % mars_msw
+    print("MARS MSW: %X" % mars_msw)
 
     com= []
 
@@ -530,7 +536,7 @@ def save():
 
 
 
-    print "MARS Mid 13: %X" % mars_mid13
+    print("MARS Mid 13: %X" % mars_mid13)
 
     mars_mid = []
     mars_int2 = int(0)
@@ -538,7 +544,7 @@ def save():
         mars_int2 = int(0)
         for v in range(0,32):
             mars_int2 = ((mars_int2)<<1 | com.pop())
-        print "mars int2 : %08X" % mars_int2
+        print("mars int2 : %08X" % mars_int2)
         mars_mid.append(mars_int2)
 
     #print (mars_mid)
@@ -557,7 +563,7 @@ p.param('Save/Restore functionality', 'Restore State').sigActivated.connect(rest
 def load_MARS():
     save()
 
-    print "Load Mars"
+    print("Load Mars")
     zc.write(0,4)
     zc.write(0,0)
 
@@ -609,7 +615,7 @@ def load_MARS():
     zc.write(0,0)
 
 def MARS_reset():
-    print "Global Reset"
+    print("Global Reset")
     zc.write(0,128)
     zc.write(0,0)
 
@@ -622,11 +628,11 @@ def global_set():
     mars3_disable = int(p2.param('Global actons', 'Set actions','MARS 3 disable').value()) << 18
     mars_delays = int(p2.param('Global actons', 'Set actions','MARS DAQ delays').value())
     mars_mis = mars1_disable | mars2_disable  | mars3_disable | mars_delays
-    print "mars clock %04X" % mars_clock
+    print("mars clock %04X" % mars_clock)
     zc.write(52,mars_clock)
-    print "test pulser %X" % test_pulse
+    print("test pulser %X" % test_pulse)
     zc.write(32,test_pulse)
-    print "MARS mis %X" % mars_mis
+    print("MARS mis %X" % mars_mis)
     zc.write(56,mars_mis)
 
 

@@ -1,6 +1,12 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 #
+from __future__ import division
+from __future__ import print_function
+from builtins import str
+from builtins import range
+from builtins import object
+from past.utils import old_div
 import zmq
 
 import time as tm
@@ -65,25 +71,25 @@ class zclient(object):
         start = datetime.datetime.now()
 
         fd = open('data_4.bin','wb')
-        print "In Get Data"
+        print("In Get Data")
         while True:
             [address, msg] = self.data_sock.recv_multipart()
 
             if msg == b'END':
-                print "Received %s messages" % str(self.nbr)
-                print "Message END received"
+                print("Received %s messages" % str(self.nbr))
+                print("Message END received")
                 break
             if (address == zclient.TOPIC_META):
-                print "Meta data received"
+                print("Meta data received")
                 meta_data = np.frombuffer(msg, dtype=np.uint32)
-                print meta_data
+                print(meta_data)
                 np.savetxt("meta.txt",meta_data,fmt="%x")
             if (address == zclient.TOPIC_DATA):
-                print "Event data received"
+                print("Event data received")
                 data = np.frombuffer(msg, dtype=np.uint16)
                 fd.write(data)
                 totallen = totallen + len(data)
-                print "Msg Num: %d, Msg len: %d, Tot len: %d" % (self.nbr,len(data),totallen)
+                print("Msg Num: %d, Msg len: %d, Tot len: %d" % (self.nbr,len(data),totallen))
 
                 for i in range(1,len(data),8):
                    pd.append(data[i])
@@ -103,10 +109,10 @@ class zclient(object):
         fd.close()
         elapsed = stop - start
         sec = elapsed.seconds + elapsed.microseconds*1.0e-6
-        print "Processing time:", elapsed, sec;
+        print("Processing time:", elapsed, sec);
 
-        print "Total Size: %d (%d bytes)" % (totallen, totallen * 4)
-        bitrate = (float(totallen*4)/float(sec))
+        print("Total Size: %d (%d bytes)" % (totallen, totallen * 4))
+        bitrate = (old_div(float(totallen*4),float(sec)))
         print ('Received %d frames at %f MBps' % (self.nbr, bitrate))
 
 
@@ -135,24 +141,24 @@ def on_trig():
     ip_addr = "tcp://10.0.143.100"
     zc = zclient(ip_addr)
     zc.write(0,64)
-    print "reset FPGA state machines"
+    print("reset FPGA state machines")
     zc.write(0,0)
     zc.write(16,1)
-    print "ADC reads = 2"
+    print("ADC reads = 2")
     zc.write(24,2)
-    print "reset fifo"
+    print("reset fifo")
     zc.write(104,4)
     tm.sleep(0.01)
     zc.write(104,0)
     tm.sleep(0.01)
     zc.write(104,1)
-    print "sent DAQ trigger"
+    print("sent DAQ trigger")
     zc.set_trigdaq(1)
     totallen, bitrate, pd, td, addr = zc.get_data(0)
-    print "sent DAQ stop"
+    print("sent DAQ stop")
     zc.set_trigdaq(0)
     read_number = zc.read(100)
-    print "number of data ", read_number
+    print("number of data ", read_number)
 
 
 
