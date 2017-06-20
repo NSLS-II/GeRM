@@ -284,7 +284,7 @@ void *event_publish(void *args)
                   pd = (databuf[i] & 0xFFF);
                   td = (databuf[i] & 0x3FF000) >> 12;
                   ts_prev = ts;
-                  ts = (databuf[i+1] & 0x1FFFFFFF);
+                  ts = (databuf[i+1] & 0x7FFFFFFF);
 
                   if (ts > ts_prev + 19)
                     printf("\n");
