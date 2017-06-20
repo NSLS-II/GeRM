@@ -3,126 +3,21 @@
 #
 from __future__ import division
 from __future__ import print_function
-from builtins import str
 from builtins import range
-from builtins import object
-from past.utils import old_div
-import zmq
+from pygerm.zmq import ZClientWriter
+from pygerm import TRIGGER_SETUP_SEQ, START_DAQ, STOP_DAQ
 
 import time as tm
 
 import numpy as np
+import matplotlib
+matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
-
-import sys
+plt.ion()
 from matplotlib.backends.qt_compat import QtWidgets, QtCore
 
-import datetime
 
-
-class zclient(object):
-
-    ZMQ_DATA_PORT = "5556"
-    ZMQ_CNTL_PORT = "5555"
-    TOPIC_DATA = b"data"
-    TOPIC_META = b"meta"
-
-    def __init__(self, connect_str):
-        self.__context = zmq.Context()
-        self.data_sock = self.__context.socket(zmq.SUB)
-        self.ctrl_sock = self.__context.socket(zmq.REQ)
-
-        self.data_sock.connect(connect_str + ":" + zclient.ZMQ_DATA_PORT)
-        self.data_sock.setsockopt(zmq.SUBSCRIBE, zclient.TOPIC_DATA)
-        self.data_sock.setsockopt(zmq.SUBSCRIBE, zclient.TOPIC_META)
-
-        self.ctrl_sock.connect(connect_str + ":" + zclient.ZMQ_CNTL_PORT)
-
-    def __cntrl_recv(self):
-        msg = self.ctrl_sock.recv()
-        dat = np.frombuffer(msg, dtype=np.uint32)
-        return dat
-
-    def __cntrl_send(self, payload):
-        self.ctrl_sock.send(np.array(payload, dtype=np.uint32))
-
-    def write(self, addr, value):
-        self.__cntrl_send([0x1, int(addr), int(value)])
-        self.__cntrl_recv()
-
-    def read(self, addr):
-        self.__cntrl_send([0x0, int(addr), 0x0])
-        return int(self.__cntrl_recv()[2])
-
-    def set_trigdaq(self, value):
-        self.write(0x00, value)
-        # print("Trigger DAQ")
-
-    def get_data(self, chkdata):
-        self.nbr = 0
-        totallen = 0
-        pd = []
-        td = []
-        addr = []
-        start = datetime.datetime.now()
-
-        fd = open
-        print("In Get Data")
-        with open('data_4.bin', 'wb') as fd:
-            while True:
-                [address, msg] = self.data_sock.recv_multipart()
-
-                if msg == b'END':
-                    print("Received %s messages" % str(self.nbr))
-                    print("Message END received")
-                    break
-                if (address == zclient.TOPIC_META):
-                    print("Meta data received")
-                    meta_data = np.frombuffer(msg, dtype=np.uint32)
-                    print(meta_data)
-                    np.savetxt("meta.txt", meta_data, fmt="%x")
-                    break
-                if (address == zclient.TOPIC_DATA):
-                    print("Event data received")
-                    data = np.frombuffer(msg, dtype=np.uint64)
-                    fd.write(data)
-                    # counting number of words, getting words out as one
-                    # 64bit number
-                    totallen = totallen + len(data) * 2
-                    print("Msg Num: %d, Msg len: %d, Tot len: %d" % (
-                        self.nbr, len(data) * 2, totallen))
-
-                    # chip addr
-                    _chip = (data >> (27 + 32)) & 0xf
-                    # chan addr
-                    _chan = (data >> (22 + 32)) & 0x1f
-                    # fine ts
-                    _td = (data >> (12 + 32)) & 0x3ff
-                    _pd = (data >> 32) & 0xfff
-                    # _ts = data & 0x7fffffff
-
-                    pd.extend(_pd)
-                    td.extend(_td)
-                    addr.extend((_chan << 5) + _chip)
-
-                    if self.nbr > 5000:
-                        break
-                    self.nbr += 1
-
-        stop = datetime.datetime.now()
-
-        elapsed = stop - start
-        sec = elapsed.seconds + elapsed.microseconds*1.0e-6
-        print("Processing time:", elapsed, sec)
-
-        print("Total Size: %d (%d bytes)" % (totallen * 2, totallen * 8))
-        bitrate = (old_div(float(totallen*4), float(sec)))
-        print('Received %d frames at %f MBps' % (self.nbr, bitrate))
-
-        return totallen, bitrate, pd, td, addr
-
-
-# Create an PyQT4 application object.
+# Create an QApplication object.
 a = QtWidgets.QApplication.instance()
 if a is None:
     a = QtWidgets.QApplication(["MARS DAQ"])
@@ -146,24 +41,19 @@ btn_trig = QtWidgets.QPushButton('DAQ Trigger', w)
 def on_trig():
     print('triggered')
     ip_addr = "tcp://localhost"
-    zc = zclient(ip_addr)
-    zc.write(0, 64)
-    print("reset FPGA state machines")
-    zc.write(0, 0)
-    zc.write(0x10, 1)
-    print("ADC reads = 2")
-    zc.write(0x18, 2)
-    print("reset fifo")
-    zc.write(0x68, 4)
-    tm.sleep(0.01)
-    zc.write(0x68, 0)
-    tm.sleep(0.01)
-    zc.write(0x68, 1)
+    zc = ZClientWriter(ip_addr)
+    for (addr, val) in TRIGGER_SETUP_SEQ:
+        if addr is None:
+            tm.sleep(val)
+        else:
+            zc.write(addr, val)
+
     print("sent DAQ trigger")
-    zc.set_trigdaq(1)
+    zc.write(*START_DAQ)
     totallen, bitrate, pd, td, addr = zc.get_data(0)
     print("sent DAQ stop")
-    zc.set_trigdaq(0)
+    zc.set_trigdaq(*STOP_DAQ)
+
     read_number = zc.read(0x64)
     print("number of data ", read_number)
 
