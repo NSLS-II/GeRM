@@ -66,51 +66,51 @@ class zclient(object):
         addr = []
         start = datetime.datetime.now()
 
-        fd = open('data_4.bin', 'wb')
+        fd = open
         print("In Get Data")
-        while True:
-            [address, msg] = self.data_sock.recv_multipart()
+        with open('data_4.bin', 'wb') as fd:
+            while True:
+                [address, msg] = self.data_sock.recv_multipart()
 
-            if msg == b'END':
-                print("Received %s messages" % str(self.nbr))
-                print("Message END received")
-                break
-            if (address == zclient.TOPIC_META):
-                print("Meta data received")
-                meta_data = np.frombuffer(msg, dtype=np.uint32)
-                print(meta_data)
-                np.savetxt("meta.txt", meta_data, fmt="%x")
-                break
-            if (address == zclient.TOPIC_DATA):
-                print("Event data received")
-                data = np.frombuffer(msg, dtype=np.uint64)
-                fd.write(data)
-                # counting number of words, getting words out as one
-                # 64bit number
-                totallen = totallen + len(data) * 2
-                print("Msg Num: %d, Msg len: %d, Tot len: %d" % (
-                    self.nbr, len(data) * 2, totallen))
-
-                # chip addr
-                _chip = (data >> (27 + 32)) & 0xf
-                # chan addr
-                _chan = (data >> (22 + 32)) & 0x1f
-                # fine ts
-                _td = (data >> (12 + 32)) & 0x3ff
-                _pd = (data >> 32) & 0xfff
-                # _ts = data & 0x7fffffff
-
-                pd.extend(_pd)
-                td.extend(_td)
-                addr.extend((_chan << 5) + _chip)
-
-                if self.nbr > 5000:
+                if msg == b'END':
+                    print("Received %s messages" % str(self.nbr))
+                    print("Message END received")
                     break
-                self.nbr += 1
+                if (address == zclient.TOPIC_META):
+                    print("Meta data received")
+                    meta_data = np.frombuffer(msg, dtype=np.uint32)
+                    print(meta_data)
+                    np.savetxt("meta.txt", meta_data, fmt="%x")
+                    break
+                if (address == zclient.TOPIC_DATA):
+                    print("Event data received")
+                    data = np.frombuffer(msg, dtype=np.uint64)
+                    fd.write(data)
+                    # counting number of words, getting words out as one
+                    # 64bit number
+                    totallen = totallen + len(data) * 2
+                    print("Msg Num: %d, Msg len: %d, Tot len: %d" % (
+                        self.nbr, len(data) * 2, totallen))
+
+                    # chip addr
+                    _chip = (data >> (27 + 32)) & 0xf
+                    # chan addr
+                    _chan = (data >> (22 + 32)) & 0x1f
+                    # fine ts
+                    _td = (data >> (12 + 32)) & 0x3ff
+                    _pd = (data >> 32) & 0xfff
+                    # _ts = data & 0x7fffffff
+
+                    pd.extend(_pd)
+                    td.extend(_td)
+                    addr.extend((_chan << 5) + _chip)
+
+                    if self.nbr > 5000:
+                        break
+                    self.nbr += 1
 
         stop = datetime.datetime.now()
 
-        fd.close()
         elapsed = stop - start
         sec = elapsed.seconds + elapsed.microseconds*1.0e-6
         print("Processing time:", elapsed, sec)
