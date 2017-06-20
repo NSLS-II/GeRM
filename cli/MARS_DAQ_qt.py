@@ -200,8 +200,8 @@ def on_trig():
     plt.show()
 
 
-# btn.setToolTip('Click to quit!')
-btn_q.clicked.connect(exit)
+btn_q.setToolTip('Click to quit!')
+btn_q.clicked.connect(w.close)
 btn_trig.clicked.connect(on_trig)
 # btn.resize(btn.sizeHint())
 btn_q.move(10, 10)
@@ -210,4 +210,4 @@ btn_trig.move(150, 10)
 # Show window
 w.show()
 
-sys.exit(a.exec_())
+a.exec_()
