@@ -15,8 +15,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import sys
-from PyQt4.QtCore import pyqtSlot
-from PyQt4.QtGui import *
+from matplotlib.backends.qt_compat import QtWidgets, QtCore
 
 
 import datetime, time
@@ -118,10 +117,13 @@ class zclient(object):
 
 
 # Create an PyQT4 application object.
-a = QApplication(sys.argv)
+a = QtWidgets.QApplication.instance()
+if a is None:
+    a = QtWidgets.QApplication(["MARS DAQ"])
+    a.lastWindowClosed.connect(a.quit)
 
 # The QWidget widget is the base class of all user interface objects in PyQt4.
-w = QWidget()
+w = QtWidgets.QWidget()
 
 # Set window size.
 w.resize(320, 140)
@@ -130,10 +132,11 @@ w.resize(320, 140)
 w.setWindowTitle("MARS DAQ!")
 
 # Add a button
-btn_q = QPushButton('Quit!', w)
-btn_trig = QPushButton('DAQ Trigger', w)
+btn_q = QtWidgets.QPushButton('Quit!', w)
+btn_trig = QtWidgets.QPushButton('DAQ Trigger', w)
 
-@pyqtSlot()
+
+@QtCore.Slot()
 def on_trig():
     print('triggered')
     ip_addr = "tcp://10.0.143.100"
