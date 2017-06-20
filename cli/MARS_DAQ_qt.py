@@ -80,22 +80,29 @@ class zclient(object):
                 meta_data = np.frombuffer(msg, dtype=np.uint32)
                 print(meta_data)
                 np.savetxt("meta.txt", meta_data, fmt="%x")
+                break
             if (address == zclient.TOPIC_DATA):
                 print("Event data received")
-                data = np.frombuffer(msg, dtype=np.uint16)
+                data = np.frombuffer(msg, dtype=np.uint64)
                 fd.write(data)
-                totallen = totallen + len(data)
+                # counting number of words, getting words out as one
+                # 64bit number
+                totallen = totallen + len(data) * 2
                 print("Msg Num: %d, Msg len: %d, Tot len: %d" % (
-                    self.nbr, len(data), totallen))
+                    self.nbr, len(data) * 2, totallen))
 
-                for i in range(1, len(data), 8):
-                   pd.append(data[i])
+                # chip addr
+                _chip = (data >> (27 + 32)) & 0xf
+                # chan addr
+                _chan = (data >> (22 + 32)) & 0x1f
+                # fine ts
+                _td = (data >> (12 + 32)) & 0x3ff
+                _pd = (data >> 32) & 0xfff
+                # _ts = data & 0x7fffffff
 
-                for i in range(0, len(data), 8):
-                   td.append(data[i])
-
-                for i in range(6, len(data), 8):
-                   addr.append((data[i]) & 255)
+                pd.extend(_pd)
+                td.extend(_td)
+                addr.extend((_chan << 5) + _chip)
 
                 if self.nbr > 5000:
                     break
@@ -108,7 +115,7 @@ class zclient(object):
         sec = elapsed.seconds + elapsed.microseconds*1.0e-6
         print("Processing time:", elapsed, sec)
 
-        print("Total Size: %d (%d bytes)" % (totallen, totallen * 4))
+        print("Total Size: %d (%d bytes)" % (totallen * 2, totallen * 8))
         bitrate = (old_div(float(totallen*4), float(sec)))
         print('Received %d frames at %f MBps' % (self.nbr, bitrate))
 
