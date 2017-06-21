@@ -40,7 +40,7 @@ btn_trig = QtWidgets.QPushButton('DAQ Trigger', w)
 @QtCore.Slot()
 def on_trig():
     print('triggered')
-    ip_addr = "tcp://localhost"
+    ip_addr = "tcp://10.0.143.100"
     zc = ZClientWriter(ip_addr)
     for (addr, val) in TRIGGER_SETUP_SEQ:
         if addr is None:
