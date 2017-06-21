@@ -54,17 +54,18 @@ def recv_and_process():
     def sim_data():
         nonlocal ts_offset
         state[FRAMENUMREG] += 1
-        for j in range(n_msgs):
+        num_per_msg = np.random.poisson(N, size=n_msgs)
+        for num in num_per_msg:
             # simulate 4 active chips
-            chip_id = np.random.randint(4, size=N, dtype=np.uint64) << (27+32)
+            chip_id = np.random.randint(4, size=num, dtype=np.uint64) << (27+32)
             # simulate 4 active channels per chip
-            chan_id = np.random.randint(4, size=N, dtype=np.uint64) << (22+32)
+            chan_id = np.random.randint(4, size=num, dtype=np.uint64) << (22+32)
             # fine timestamp
-            td = np.random.randint(2**10, size=N, dtype=np.uint64) << (12+32)
+            td = np.random.randint(2**10, size=num, dtype=np.uint64) << (12+32)
             # energy
-            pd = simulate_line(N) << 32
+            pd = simulate_line(num) << 32
             # coarse timestamp
-            ts = np.mod((np.cumsum(np.random.poisson(tick_gap, size=N)) +
+            ts = np.mod((np.cumsum(np.random.poisson(tick_gap, size=num)) +
                          ts_offset),
                         2**31)
             ts_offset = ts[-1]
