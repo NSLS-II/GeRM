@@ -40,7 +40,7 @@ btn_trig = QtWidgets.QPushButton('DAQ Trigger', w)
 @QtCore.Slot()
 def on_trig():
     print('triggered')
-    ip_addr = "tcp://10.0.143.100"
+    ip_addr = 'tcp://localhost' #"tcp://10.0.143.100"
     zc = ZClientWriter(ip_addr)
     for (addr, val) in TRIGGER_SETUP_SEQ:
         if addr is None:
@@ -52,18 +52,14 @@ def on_trig():
     zc.write(*START_DAQ)
     totallen, bitrate, pd, td, addr = zc.get_data(0)
     print("sent DAQ stop")
-    zc.set_trigdaq(*STOP_DAQ)
+    zc.write(*STOP_DAQ)
 
     read_number = zc.read(0x64)
     print("number of data ", read_number)
 
-    # x1 = np.arange(0, len(td), 1)
-    x_len = 50
-    x1 = np.arange(0, x_len, 1)
-    x = np.arange(0, x_len, 1)
-
     plt.subplot(3, 2, 1)
-    plt.plot(x, [pd[i] for i in range(0, x_len)])
+    plt.plot(pd[::50])
+
     plt.title('PD')
     plt.grid()
 
@@ -73,7 +69,7 @@ def on_trig():
     plt.grid()
 
     plt.subplot(3, 2, 3)
-    plt.plot(x1, [td[i] for i in range(0, x_len)])
+    plt.plot(td[::50])
     plt.title('TD')
     plt.grid()
 
@@ -87,6 +83,7 @@ def on_trig():
     plt.title('addr hist')
     plt.grid()
 
+    plt.gcf().tight_layout()
     plt.draw()
     plt.show()
 
