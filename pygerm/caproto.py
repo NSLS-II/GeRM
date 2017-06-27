@@ -1,11 +1,12 @@
 import numpy as np
 import h5py
 from pathlib import Path
-from caproto import ChannelData
+import caproto as ca
 import curio.zmq as zmq
 from pygerm.zmq import ZClient, parse_event_payload, DATA_TYPES
 from pygerm import TRIGGER_SETUP_SEQ, START_DAQ, STOP_DAQ
 import curio
+import uuid
 
 
 class ZClientCaproto(ZClient):
@@ -55,12 +56,12 @@ class ZClientCaproto(ZClient):
         return topic, payload
 
 
-class ChannelGeRMAcquire(ChannelData):
+class ChannelGeRMAcquire(ca.ChannelData):
     def __init__(self, *, zclient,
-                 file_path_channel, **kwargs):
+                 parent, **kwargs):
         super().__init__(**kwargs)
         self.zclient = zclient
-        self.file_path_channel = file_path_channel
+        self.parent = parent
 
     async def set_dbr_data(self, data, data_type, metadata):
         await super().set_dbr_data(data, data_type, metadata)
@@ -68,15 +69,17 @@ class ChannelGeRMAcquire(ChannelData):
             fr_num, ev_count, data = await triggered_frame(self.zclient)
             print(fr_num, ev_count)
             try:
-                print(self.file_path_channel)
-                print(self.file_path_channel.value)
-                if self.file_path_channel.value[0]:
-                    path = Path(self.file_path_channel.value[0].decode(
-                        self.file_path_channel.string_encoding))
+                write_path, = self.parent.filepath_channel.value
+                write_path = write_path.decode(
+                        self.parent.filepath_channel.string_encoding)
+                if write_path:
+                    path = Path(write_path)
                     print(path)
-                    path.parent.mkdir(parents=True, exist_ok=True)
-                    print(path.parent.exists())
-                    with h5py.File(str(path), 'w-') as fout:
+                    path.mkdir(parents=True, exist_ok=True)
+
+                    fname = path / '{}.h5'.format(str(uuid.uuid4()))
+                    print(fname)
+                    with h5py.File(str(fname), 'w-') as fout:
                         print('made file')
                         g = fout.create_group('GeRM')
                         dsets = {k: g.create_dataset(k, shape=(ev_count,),
@@ -90,10 +93,34 @@ class ChannelGeRMAcquire(ChannelData):
                             for k, d in zip(DATA_TYPES, payload):
                                 dsets[k][offset:offset+bunch_len] = d
                             offset += bunch_len
+                    await self.parent.last_file_channel.set_dbr_data(
+                        str(fname.name), ca.DBR_STRING.DBR_ID, None)
+
             except Exception as e:
+                print(data_type)
+                print('failed')
                 print(e)
 
-            await super().set_dbr_data(0, data_type, metadata)
+            await super().set_dbr_data(0, data_type, None)
+
+
+class GeRMIOC:
+    def __init__(self, zmq_url, fs):
+        self._fs = fs
+        self.zclient = ZClientCaproto(zmq_url, zmq=zmq)
+        self.filepath_channel = ca.ChannelString(
+            value=[b'/tmp'],
+            string_encoding='latin-1')
+        self.last_file_channel = ca.ChannelString(
+            value=[''],
+            string_encoding='latin-1')
+        self.datum_uid_channel = ca.ChannelString(
+            value=[''],
+            string_encoding='latin-1')
+        self.acquire_channel = ChannelGeRMAcquire(
+            value=0,
+            zclient=self.zclient,
+            parent=self)
 
 
 async def triggered_frame(zc):
@@ -108,10 +135,3 @@ async def triggered_frame(zc):
     await zc.write(*STOP_DAQ)
 
     return fr_num, ev_count, data
-
-
-async def wrapped_run():
-    zc = ZClientCaproto('tcp://localhost', zmq=zmq)
-
-    t = await curio.spawn(triggered_frame, zc)
-    return await t.join()
