@@ -1,5 +1,6 @@
 import numpy as np
 import datetime
+from collections import OrderedDict
 
 
 def parse_event_payload(data):
@@ -29,6 +30,13 @@ def parse_event_payload(data):
     ts = data & 0x7fffffff
 
     return chip, chan, td, pd, ts
+
+
+DATA_TYPES = OrderedDict((('chip', 8),
+                          ('chan', 8),
+                          ('timestamp_fine', 16),
+                          ('energy', 16),
+                          ('timestamp_coarse', 32)))
 
 
 class ZClient(object):

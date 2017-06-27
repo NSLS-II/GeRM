@@ -72,6 +72,7 @@ def recv_and_process():
             payload = chip_id + chan_id + td + pd + ts_offset
             yield from publisher.send_multipart([b'data',
                                                  payload])
+            yield from asyncio.sleep(.1)
 
         yield from publisher.send_multipart([b'meta',
                                              np.uint32(state[FRAMENUMREG])])

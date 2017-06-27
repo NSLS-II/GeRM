@@ -1,9 +1,9 @@
 import numpy as np
-
-from caproto import ChannelData, SubscriptionType
-from curio.meta import awaitable
+import h5py
+from pathlib import Path
+from caproto import ChannelData
 import curio.zmq as zmq
-from pygerm.zmq import ZClient, parse_event_payload
+from pygerm.zmq import ZClient, parse_event_payload, DATA_TYPES
 from pygerm import TRIGGER_SETUP_SEQ, START_DAQ, STOP_DAQ
 import curio
 
@@ -56,26 +56,44 @@ class ZClientCaproto(ZClient):
 
 
 class ChannelGeRMAcquire(ChannelData):
-    def __init__(self, *, zclient, **kwargs):
+    def __init__(self, *, zclient,
+                 file_path_channel, **kwargs):
         super().__init__(**kwargs)
         self.zclient = zclient
+        self.file_path_channel = file_path_channel
 
-    def set_dbr_data(self, data, data_type, metadata, future):
-        raise NotImplemented()
+    async def set_dbr_data(self, data, data_type, metadata):
+        await super().set_dbr_data(data, data_type, metadata)
+        if data:
+            fr_num, ev_count, data = await triggered_frame(self.zclient)
+            print(fr_num, ev_count)
+            try:
+                print(self.file_path_channel)
+                print(self.file_path_channel.value)
+                if self.file_path_channel.value[0]:
+                    path = Path(self.file_path_channel.value[0].decode(
+                        self.file_path_channel.string_encoding))
+                    print(path)
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    print(path.parent.exists())
+                    with h5py.File(str(path), 'w-') as fout:
+                        print('made file')
+                        g = fout.create_group('GeRM')
+                        dsets = {k: g.create_dataset(k, shape=(ev_count,),
+                                                     dtype=f'uint{w}')
+                                 for k, w in DATA_TYPES.items()}
+                        print('made dsets')
+                        offset = 0
+                        for n, payload in enumerate(data):
+                            print(f'bunch {n} with offset {offset}')
+                            bunch_len = len(payload[0])
+                            for k, d in zip(DATA_TYPES, payload):
+                                dsets[k][offset:offset+bunch_len] = d
+                            offset += bunch_len
+            except Exception as e:
+                print(e)
 
-    @awaitable(set_dbr_data)
-    async def set_dbr_data(self, data, data_type, metadata, future):
-        try:
-            self.value = self.fromtype(values=data, data_type=data_type)
-        except Exception as ex:
-            future.set_exception(ex)
-        else:
-            sub_queue = self._subscription_queue
-            if sub_queue is not None:
-                sub_queue.put((self, SubscriptionType.DBE_VALUE,
-                               self.value) +
-                              self._subscription_queue_args)
-        return True
+            await super().set_dbr_data(0, data_type, metadata)
 
 
 async def triggered_frame(zc):
