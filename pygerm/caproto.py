@@ -69,9 +69,7 @@ class ChannelGeRMAcquire(ca.ChannelData):
             fr_num, ev_count, data = await triggered_frame(self.zclient)
             print(fr_num, ev_count)
             try:
-                write_path, = self.parent.filepath_channel.value
-                write_path = write_path.decode(
-                        self.parent.filepath_channel.string_encoding)
+                write_path = self.parent.filepath_channel.value
                 if write_path:
                     path = Path(write_path)
                     print(path)
@@ -94,7 +92,7 @@ class ChannelGeRMAcquire(ca.ChannelData):
                                 dsets[k][offset:offset+bunch_len] = d
                             offset += bunch_len
                     await self.parent.last_file_channel.set_dbr_data(
-                        str(fname.name), ca.DBR_STRING.DBR_ID, None)
+                        str(fname.name), ca.DBR_CHAR.DBR_ID, None)
 
             except Exception as e:
                 print(data_type)
@@ -109,13 +107,13 @@ class GeRMIOC:
         self._fs = fs
         self.zclient = ZClientCaproto(zmq_url, zmq=zmq)
         self.filepath_channel = ca.ChannelString(
-            value=[b'/tmp'],
+            value='/tmp',
             string_encoding='latin-1')
-        self.last_file_channel = ca.ChannelString(
-            value=[''],
+        self.last_file_channel = ca.ChannelChar(
+            value='',
             string_encoding='latin-1')
-        self.datum_uid_channel = ca.ChannelString(
-            value=[''],
+        self.datum_uid_channel = ca.ChannelChar(
+            value='',
             string_encoding='latin-1')
         self.acquire_channel = ChannelGeRMAcquire(
             value=0,
