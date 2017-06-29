@@ -32,7 +32,8 @@ class ZClientCaproto(ZClient):
         total_events = 0
         fr_num = None
         data_buffer = []
-        while True:
+        target = 1000
+        while total_events < target:
             topic, data = await self.read_single_payload()
             if topic == self.TOPIC_META:
                 print(data)
@@ -40,7 +41,9 @@ class ZClientCaproto(ZClient):
                 break
             elif topic == self.TOPIC_DATA:
                 data_buffer.append(data)
-                total_events += len(data[0])
+                new_ev = len(data[0])
+                total_events += new_ev
+                print(f'ingested {new_ev} ({total_events}) of {target}') 
             else:
                 raise RuntimeError("should never get here")
         return fr_num, total_events, data_buffer
