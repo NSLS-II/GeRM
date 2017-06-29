@@ -35,9 +35,42 @@ simulated_exposure = 10
 # ([S] / [event]) * ([tick] / [s]) = [tick] / [event]
 tick_gap = int((simulated_exposure / N) / (40 * 10e-9))
 
+n_chips = 4
+n_chans = 2
+
 
 def simulate_line(n):
+    return np.clip(
+        (2**6 * np.random.randn(n)) + 2**11,
+        0, 2**12 - 1).astype(np.uint64)
+
+
+def simulate_random(n):
     return np.random.randint(2**12, size=n, dtype=np.uint64)
+
+
+def make_sim_payload(num, n_chips, n_chans, tick_gap, ts_offset):
+    # simulate 4 active chips
+    # chip_id = np.random.randint(4, size=num, dtype=np.uint64) << (27+32)
+    chip_id = ((np.arange(num, dtype=np.uint64) //
+                n_chips) %
+               n_chips) << (27+32)
+    # simulate 4 active channels per chip
+    chan_id = ((np.arange(num, dtype=np.uint64) %
+                n_chips) %
+               n_chans) << (22+32)
+    # chan_id = np.random.randint(4, size=num, dtype=np.uint64) << (22+32)
+    # fine timestamp
+    td = np.random.randint(2**10, size=num, dtype=np.uint64) << (12+32)
+    # energy
+    pd = simulate_line(num) << 32
+    # coarse timestamp
+    ts = np.mod((np.cumsum(
+        np.random.poisson(tick_gap, size=num).astype(np.uint64)) +
+                 ts_offset),
+                2**31)
+    payload = chip_id + chan_id + td + pd + ts
+    return payload, ts[-1]
 
 
 @asyncio.coroutine
@@ -55,23 +88,13 @@ def recv_and_process():
         nonlocal ts_offset
         state[FRAMENUMREG] += 1
         num_per_msg = np.random.poisson(N, size=n_msgs)
+        ts_offset = 0
         for num in num_per_msg:
-            # simulate 4 active chips
-            chip_id = np.random.randint(4, size=num, dtype=np.uint64) << (27+32)
-            # simulate 4 active channels per chip
-            chan_id = np.random.randint(4, size=num, dtype=np.uint64) << (22+32)
-            # fine timestamp
-            td = np.random.randint(2**10, size=num, dtype=np.uint64) << (12+32)
-            # energy
-            pd = simulate_line(num) << 32
-            # coarse timestamp
-            ts = np.mod((np.cumsum(np.random.poisson(tick_gap, size=num)) +
-                         ts_offset),
-                        2**31)
-            ts_offset = ts[-1]
-            payload = chip_id + chan_id + td + pd + ts_offset
-            yield from publisher.send_multipart([b'data',
-                                                 payload])
+            payload, ts_offset = make_sim_payload(num,
+                                                  n_chips, n_chans,
+                                                  tick_gap,
+                                                  ts_offset)
+            yield from publisher.send_multipart([b'data', payload])
             yield from asyncio.sleep(.1)
 
         yield from publisher.send_multipart([b'meta',
