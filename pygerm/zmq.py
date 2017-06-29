@@ -19,15 +19,15 @@ def parse_event_payload(data):
     # TODO sort out if this can be made faster!
 
     # chip addr
-    chip = (data >> (27 + 32)) & 0xf
+    chip = (data >> (27)) & 0xf
     # chan addr
-    chan = (data >> (22 + 32)) & 0x1f
+    chan = (data >> (22)) & 0x1f
     # fine ts
-    td = (data >> (12 + 32)) & 0x3ff
+    td = (data >> (12)) & 0x3ff
     # evergy readings
-    pd = (data >> 32) & 0xfff
+    pd = (data) & 0xfff
     # FPGA tick
-    ts = data & 0x7fffffff
+    ts = data >> 32 & 0x7fffffff
 
     return chip, chan, td, pd, ts
 
