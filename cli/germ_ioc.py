@@ -4,12 +4,17 @@ from pygerm.caproto import GeRMIOC
 
 
 def create_server(zmq_url):
-    germ = GeRMIOC(zmq_url, None)
+    germ = GeRMIOC(zmq_url, 'FS')
     pvdb = {'germ:acquire': germ.acquire_channel,
             'germ:filepath': germ.filepath_channel,
             'germ:last_file': germ.last_file_channel,
-            'germ:datum_uid': germ.datum_uid_channel}
 
+            'germ:UUID:CHIP': germ.uid_chip_channel,
+            'germ:UUID:CHAN': germ.uid_chan_channel,
+            'germ:UUID:TD': germ.uid_td_channel,
+            'germ:UUID:PD': germ.uid_pd_channel,
+            'germ:UUID:TS': germ.uid_ts_channel,
+            }
     return Context('0.0.0.0', find_next_tcp_port(), pvdb), germ
 
 

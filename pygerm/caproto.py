@@ -70,6 +70,8 @@ class ChannelGeRMAcquire(ca.ChannelData):
             print(fr_num, ev_count)
             try:
                 write_path = self.parent.filepath_channel.value
+                write_path = write_path.decode(
+                    self.parent.filepath_channel.string_encoding)
                 if write_path:
                     path = Path(write_path)
                     print(path)
@@ -92,7 +94,18 @@ class ChannelGeRMAcquire(ca.ChannelData):
                                 dsets[k][offset:offset+bunch_len] = d
                             offset += bunch_len
                     await self.parent.last_file_channel.set_dbr_data(
-                        str(fname.name), ca.DBR_CHAR.DBR_ID, None)
+                        str(fname.name), ca.DBR_STRING.DBR_ID, None)
+                    if self.parent._fs:
+                        await self.parent.uid_chan_channel.set_dbr_data(
+                            str(uuid.uuid4()), ca.DBR_STRING.DBR_ID, None)
+                        await self.parent.uid_chip_channel.set_dbr_data(
+                            str(uuid.uuid4()), ca.DBR_STRING.DBR_ID, None)
+                        await self.parent.uid_td_channel.set_dbr_data(
+                            str(uuid.uuid4()), ca.DBR_STRING.DBR_ID, None)
+                        await self.parent.uid_pd_channel.set_dbr_data(
+                            str(uuid.uuid4()), ca.DBR_STRING.DBR_ID, None)
+                        await self.parent.uid_ts_channel.set_dbr_data(
+                            str(uuid.uuid4()), ca.DBR_STRING.DBR_ID, None)
 
             except Exception as e:
                 print(data_type)
@@ -106,19 +119,25 @@ class GeRMIOC:
     def __init__(self, zmq_url, fs):
         self._fs = fs
         self.zclient = ZClientCaproto(zmq_url, zmq=zmq)
-        self.filepath_channel = ca.ChannelString(
-            value='/tmp',
-            string_encoding='latin-1')
-        self.last_file_channel = ca.ChannelChar(
-            value='',
-            string_encoding='latin-1')
-        self.datum_uid_channel = ca.ChannelChar(
-            value='',
-            string_encoding='latin-1')
+
         self.acquire_channel = ChannelGeRMAcquire(
-            value=0,
-            zclient=self.zclient,
-            parent=self)
+            value=0, zclient=self.zclient, parent=self)
+
+        self.filepath_channel = ca.ChannelString(
+            value=b'/tmp', string_encoding='latin-1')
+        self.last_file_channel = ca.ChannelString(
+            value='null', string_encoding='latin-1')
+
+        self.uid_chip_channel = ca.ChannelString(
+            value='null', string_encoding='latin-1')
+        self.uid_chan_channel = ca.ChannelString(
+            value='null', string_encoding='latin-1')
+        self.uid_td_channel = ca.ChannelString(
+            value='null', string_encoding='latin-1')
+        self.uid_pd_channel = ca.ChannelString(
+            value='null', string_encoding='latin-1')
+        self.uid_ts_channel = ca.ChannelString(
+            value='null', string_encoding='latin-1')
 
 
 async def triggered_frame(zc):
