@@ -68,6 +68,8 @@ class ChannelGeRMAcquire(ca.ChannelData):
         if data:
             fr_num, ev_count, data = await triggered_frame(self.zclient)
             print(fr_num, ev_count)
+            await self.parent.count_channel.set_dbr_data(
+                ev_count, ca.DBR_INT.DBR_ID, None)
             try:
                 write_path = self.parent.filepath_channel.value
                 write_path = write_path.decode(
@@ -96,16 +98,18 @@ class ChannelGeRMAcquire(ca.ChannelData):
                     await self.parent.last_file_channel.set_dbr_data(
                         str(fname.name), ca.DBR_STRING.DBR_ID, None)
                     if self.parent._fs:
-                        await self.parent.uid_chan_channel.set_dbr_data(
-                            str(uuid.uuid4()), ca.DBR_STRING.DBR_ID, None)
-                        await self.parent.uid_chip_channel.set_dbr_data(
-                            str(uuid.uuid4()), ca.DBR_STRING.DBR_ID, None)
-                        await self.parent.uid_td_channel.set_dbr_data(
-                            str(uuid.uuid4()), ca.DBR_STRING.DBR_ID, None)
-                        await self.parent.uid_pd_channel.set_dbr_data(
-                            str(uuid.uuid4()), ca.DBR_STRING.DBR_ID, None)
-                        await self.parent.uid_ts_channel.set_dbr_data(
-                            str(uuid.uuid4()), ca.DBR_STRING.DBR_ID, None)
+                        fs = self.parent._fs
+                        res = fs.insert_resource('GeRM',
+                                                 str(fname), {}, '/')
+                        for short, dset in zip(
+                                ('chip', 'chan', 'td', 'pd', 'ts'),
+                                DATA_TYPES):
+                            chan_name = f'uid_{short}_channel'
+                            chan = getattr(self.parent, chan_name)
+                            dset_uid = str(uuid.uuid4())
+                            fs.insert_datum(res, dset_uid, {'column': dset})
+                            await chan.set_dbr_data(
+                                dset_uid, ca.DBR_STRING.DBR_ID, None)
 
             except Exception as e:
                 print(data_type)
@@ -127,6 +131,8 @@ class GeRMIOC:
             value=b'/tmp', string_encoding='latin-1')
         self.last_file_channel = ca.ChannelString(
             value='null', string_encoding='latin-1')
+
+        self.count_channel = ca.ChannelInteger(value=0)
 
         self.uid_chip_channel = ca.ChannelString(
             value='null', string_encoding='latin-1')

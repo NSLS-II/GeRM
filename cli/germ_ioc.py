@@ -1,13 +1,15 @@
 import curio.zmq as zmq
 from caproto.curio.server import Context, find_next_tcp_port
 from pygerm.caproto import GeRMIOC
+from portable_fs.sqlite.fs import FileStore
 
 
-def create_server(zmq_url):
-    germ = GeRMIOC(zmq_url, 'FS')
+def create_server(zmq_url, fs):
+    germ = GeRMIOC(zmq_url, fs)
     pvdb = {'germ:acquire': germ.acquire_channel,
             'germ:filepath': germ.filepath_channel,
             'germ:last_file': germ.last_file_channel,
+            'germ:COUNT': germ.count_channel,
 
             'germ:UUID:CHIP': germ.uid_chip_channel,
             'germ:UUID:CHAN': germ.uid_chan_channel,
@@ -19,5 +21,6 @@ def create_server(zmq_url):
 
 
 if __name__ == '__main__':
-    ctx, germ = create_server('tcp://localhost')
+    fs = FileStore({'dbpath': '/tmp/fs.sqlite'})
+    ctx, germ = create_server('tcp://localhost', fs)
     zmq.run(ctx.run())
