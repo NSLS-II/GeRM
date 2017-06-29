@@ -50,7 +50,8 @@ class ZClient(object):
 
     def __init__(self, url, *, zmq):
         self.__context = zmq.Context()
-        self.data_sock = self.__context.socket(zmq.SUB)
+        self._data_sock_class = zmq.SUB
+        self.data_sock = self.__context.socket(self._data_sock_class)
         self.ctrl_sock = self.__context.socket(zmq.REQ)
 
         self.data_sock.connect("{}:{}".format(url, self.ZMQ_DATA_PORT))
@@ -59,6 +60,16 @@ class ZClient(object):
 
         self.ctrl_sock.connect("{}:{}".format(url, self.ZMQ_CNTL_PORT))
 
+    def refresh_data_sock(self):
+        print('a')
+        self.data_sock.close(linger=0)
+        print('b')
+        try:
+            self.data_sock = self.__context.socket(self._data_sock_class)
+        except Exception as e:
+            print(e)
+            print('failed to remake socket')
+        print('c')        
 
 class ZClientWriter(ZClient):
     '''Synchronous class for accessing the ZMQ server that writes data files

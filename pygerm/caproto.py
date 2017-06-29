@@ -29,6 +29,7 @@ class ZClientCaproto(ZClient):
         return (await self.__cntrl_recv())
 
     async def read_frame(self):
+        print('eneter read')
         total_events = 0
         fr_num = None
         data_buffer = []
@@ -156,7 +157,9 @@ async def triggered_frame(zc):
         else:
             await zc.write(addr, val)
 
+    
     await zc.write(*START_DAQ)
+    # zc.refresh_data_sock()
     fr_num, ev_count, data = await zc.read_frame()
     await zc.write(*STOP_DAQ)
 
