@@ -113,10 +113,8 @@ class ChannelGeRMAcquire(ca.ChannelData):
                         dsets = {k: g.create_dataset(k, shape=(ev_count,),
                                                      dtype=f'uint{w}')
                                  for k, w in DATA_TYPES.items()}
-                        print('made dsets')
                         offset = 0
                         for n, payload in enumerate(data):
-                            print(f'bunch {n} with offset {offset}')
                             bunch_len = len(payload[0])
                             for k, d in zip(DATA_TYPES, payload):
                                 dsets[k][offset:offset+bunch_len] = d
@@ -174,12 +172,16 @@ class GeRMIOC:
 
 async def triggered_frame(zc):
     for (addr, val) in TRIGGER_SETUP_SEQ:
+        print(f'addr {addr} val {val}')
         if addr is None:
             await curio.sleep(val)
         else:
             await zc.write(addr, val)
 
     await zc.write(*START_DAQ)
+    # cal pulse for debugging sometimes
+    # await zc.write(0x10, 0xfff)
+    # await zc.write(0x10, 0x0)    
     fr_num, ev_count, data = await zc.read_frame()
     await zc.write(*STOP_DAQ)
 

@@ -23,10 +23,11 @@ def create_server(zmq_url, fs):
 
 if __name__ == '__main__':
     fs = FileStore({'dbpath': '/tmp/fs.sqlite'})
-    ctx, germ = create_server('tcp://localhost', fs)
+    ctx, germ = create_server('tcp://10.0.143.160', fs)
 
     async def runner():
-        await curio.spawn(germ.read_forever, deamon=True)
+        await curio.spawn(germ.zclient.read_forever, daemon=True)
         await ctx.run()
 
     zmq.run(runner)
+

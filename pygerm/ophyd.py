@@ -1,6 +1,7 @@
 import os
 from ophyd import Device, Component as Cpt, EpicsSignal, EpicsSignalRO
-
+import numpy as np
+import pandas as pd
 
 os.environ['EPICS_CA_ADDR_LIST'] = 'localhost'
 
@@ -30,3 +31,5 @@ class GeRM(Device):
 
     def trigger(self):
         return self.acquire.set(1)
+
+
