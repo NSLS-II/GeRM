@@ -54,21 +54,21 @@ def make_sim_payload(num, n_chips, n_chans, tick_gap, ts_offset):
     # chip_id = np.random.randint(4, size=num, dtype=np.uint64) << (27+32)
     chip_id = ((np.arange(num, dtype=np.uint64) //
                 n_chips) %
-               n_chips) << (27+32)
+               n_chips) << (27)
     # simulate 4 active channels per chip
     chan_id = ((np.arange(num, dtype=np.uint64) %
                 n_chips) %
-               n_chans) << (22+32)
+               n_chans) << (22)
     # chan_id = np.random.randint(4, size=num, dtype=np.uint64) << (22+32)
     # fine timestamp
-    td = np.random.randint(2**10, size=num, dtype=np.uint64) << (12+32)
+    td = np.random.randint(2**10, size=num, dtype=np.uint64) << (12)
     # energy
-    pd = simulate_line(num) << 32
+    pd = simulate_line(num)
     # coarse timestamp
     ts = np.mod((np.cumsum(
         np.random.poisson(tick_gap, size=num).astype(np.uint64)) +
                  ts_offset),
-                2**31)
+                2**31) << 32
     payload = chip_id + chan_id + td + pd + ts
     return payload, ts[-1]
 
