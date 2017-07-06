@@ -32,6 +32,7 @@ def parse_event_payload(data):
     return chip, chan, td, pd, ts
 
 
+
 DATA_TYPES = OrderedDict((('chip', 8),
                           ('chan', 8),
                           ('timestamp_fine', 16),
@@ -60,6 +61,15 @@ class ZClient(object):
 
         self.ctrl_sock.connect("{}:{}".format(url, self.ZMQ_CNTL_PORT))
 
+    def parse_message(topic, payload):
+
+        if topic == self.TOPIC_DATA:
+            payload = parse_event_payload(
+                np.frombuffer(payload, np.uint64))
+        else:
+            payload = np.frombuffer(payload, np.uint32)
+        return topic, payload
+
     def refresh_data_sock(self):
         print('a')
         self.data_sock.close(linger=0)
@@ -69,7 +79,7 @@ class ZClient(object):
         except Exception as e:
             print(e)
             print('failed to remake socket')
-        print('c')        
+        print('c')
 
 class ZClientWriter(ZClient):
     '''Synchronous class for accessing the ZMQ server that writes data files

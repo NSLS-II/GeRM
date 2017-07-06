@@ -1,3 +1,4 @@
+import curio
 import curio.zmq as zmq
 from caproto.curio.server import Context, find_next_tcp_port
 from pygerm.caproto import GeRMIOC
@@ -23,4 +24,9 @@ def create_server(zmq_url, fs):
 if __name__ == '__main__':
     fs = FileStore({'dbpath': '/tmp/fs.sqlite'})
     ctx, germ = create_server('tcp://localhost', fs)
-    zmq.run(ctx.run())
+
+    async def runner():
+        await curio.spawn(germ.read_forever, deamon=True)
+        await ctx.run()
+
+    zmq.run(runner)

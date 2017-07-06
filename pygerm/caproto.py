@@ -2,14 +2,19 @@ import numpy as np
 import h5py
 from pathlib import Path
 import caproto as ca
-import curio.zmq as zmq
-from pygerm.zmq import ZClient, parse_event_payload, DATA_TYPES
-from pygerm import TRIGGER_SETUP_SEQ, START_DAQ, STOP_DAQ
 import curio
+import curio.zmq as zmq
+from pygerm.zmq import ZClient, DATA_TYPES
+from pygerm import TRIGGER_SETUP_SEQ, START_DAQ, STOP_DAQ
 import uuid
 
 
 class ZClientCaproto(ZClient):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.acq_done = curio.Condition()
+        self.collecting = False
+        self.data_buffer = []
 
     async def __cntrl_recv(self):
         msg = await self.ctrl_sock.recv()
@@ -28,6 +33,14 @@ class ZClientCaproto(ZClient):
         # bounce the whole message back
         return (await self.__cntrl_recv())
 
+    async def read_forever(self):
+        while True:
+            topic, payload = await self.data_sock.recv_multipart()
+            if not self.collecting:
+                continue
+
+            topic, payload = self.parse_message(topic, payload)
+
     async def read_frame(self):
         print('eneter read')
         total_events = 0
@@ -44,20 +57,14 @@ class ZClientCaproto(ZClient):
                 data_buffer.append(data)
                 new_ev = len(data[0])
                 total_events += new_ev
-                print(f'ingested {new_ev} ({total_events}) of {target}') 
+                print(f'ingested {new_ev} ({total_events}) of {target}')
             else:
                 raise RuntimeError("should never get here")
         return fr_num, total_events, data_buffer
 
     async def read_single_payload(self):
         topic, payload = await self.data_sock.recv_multipart()
-
-        if topic == self.TOPIC_DATA:
-            payload = parse_event_payload(
-                np.frombuffer(payload, np.uint64))
-        else:
-            payload = np.frombuffer(payload, np.uint32)
-        return topic, payload
+        return self.parse_message(topic, payload)
 
 
 class ChannelGeRMAcquire(ca.ChannelData):
@@ -157,7 +164,6 @@ async def triggered_frame(zc):
         else:
             await zc.write(addr, val)
 
-    
     await zc.write(*START_DAQ)
     # zc.refresh_data_sock()
     fr_num, ev_count, data = await zc.read_frame()
