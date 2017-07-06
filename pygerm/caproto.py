@@ -10,11 +10,13 @@ import uuid
 
 
 class ZClientCaproto(ZClient):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, max_events=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.acq_done = curio.Condition()
         self.collecting = False
         self.data_buffer = []
+        self.last_frame = None
+        self.max_events = max_events
 
     async def __cntrl_recv(self):
         msg = await self.ctrl_sock.recv()
@@ -35,36 +37,49 @@ class ZClientCaproto(ZClient):
 
     async def read_forever(self):
         while True:
+            print(f'read forever {self.collecting}')
+            # just read from the zmq socket
             topic, payload = await self.data_sock.recv_multipart()
+            print(f'topic {topic}')
+            # if we are not collecting, then bail and read again!
             if not self.collecting:
                 continue
-
-            topic, payload = self.parse_message(topic, payload)
-
-    async def read_frame(self):
-        print('eneter read')
-        total_events = 0
-        fr_num = None
-        data_buffer = []
-        target = 1000
-        while total_events < target:
-            topic, data = await self.read_single_payload()
+            # if we are collecting, unpack the payload
+            topic, data = self.parse_message(topic, payload)
             if topic == self.TOPIC_META:
-                print(data)
-                fr_num = int(data)
-                break
+                self.last_frame = int(data)
+                # if we saw a frame meta, we are done
+                async with self.acq_done:
+                    await self.acq_done.notify_all()
             elif topic == self.TOPIC_DATA:
-                data_buffer.append(data)
+                # if just data update the internal state
+                self.data_buffer.append(data)
                 new_ev = len(data[0])
-                total_events += new_ev
-                print(f'ingested {new_ev} ({total_events}) of {target}')
+                self.total_events += new_ev
             else:
                 raise RuntimeError("should never get here")
-        return fr_num, total_events, data_buffer
+            # if we have seen more than the maximum number of events
+            if (self.max_events is not None and
+                    self.total_events > self.max_events):
+                # set the last frame to `None` (because we are now out
+                # of sync!)
+                self.last_frame = None
+                # and report that we are done
+                async with self.acq_done:
+                    await self.acq_done.notify_all()
 
-    async def read_single_payload(self):
-        topic, payload = await self.data_sock.recv_multipart()
-        return self.parse_message(topic, payload)
+    async def trigger_frame(self):
+        self.data_buffer.clear()
+        self.total_events = 0
+        self.collecting = True
+
+        async with self.acq_done:
+            await self.acq_done.wait()
+            self.collecting = False
+
+    async def read_frame(self):
+        await self.trigger_frame()
+        return self.last_frame, self.total_events, self.data_buffer
 
 
 class ChannelGeRMAcquire(ca.ChannelData):
@@ -165,8 +180,12 @@ async def triggered_frame(zc):
             await zc.write(addr, val)
 
     await zc.write(*START_DAQ)
-    # zc.refresh_data_sock()
     fr_num, ev_count, data = await zc.read_frame()
     await zc.write(*STOP_DAQ)
 
     return fr_num, ev_count, data
+
+
+async def runner(germ):
+    await curio.spawn(germ.zclient.read_forever, daemon=True)
+    return await triggered_frame(germ.zclient)
