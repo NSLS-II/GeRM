@@ -5,12 +5,12 @@ import bluesky as bs
 import bluesky.plans as bp
 
 
-
 from pygerm.ophyd import GeRM
 from pygerm.handler import GeRMHandler
 
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 # generic configuration, is already on the beamline
 fs = FileStore({'dbpath': '/tmp/fs.sqlite'})
@@ -28,16 +28,19 @@ germ = GeRM('germ', name='germ', read_attrs=['filepath', 'last_file',
                                              'chip', 'chan',
                                              'td', 'pd', 'ts', 'count'])
 
+
 def make_mars_line(h, thresh=1000):
     '''Turns heard into counts per channel above thresh
     '''
-    line = np.zeros(12*32)    
+    line = np.zeros(12*32)
     for ev in db.get_events(h, fill=True):
-       
+
         df = pd.DataFrame(ev['data'])
-        for _, (chip, chan, ct) in ((df[['germ_chip', 'germ_chan', 'germ_pd']]
-                .groupby(('germ_chip', 'germ_chan'))
-                .apply(lambda g: np.sum(g>thresh))['germ_pd']).reset_index()
+        for _, (chip, chan, ct) in (
+                (df[['germ_chip', 'germ_chan', 'germ_pd']]
+                 .groupby(('germ_chip', 'germ_chan'))
+                 .apply(lambda g: np.sum(g > thresh))['germ_pd'])
+                .reset_index()
                 .iterrows()):
             print(chip, chan, ct)
             line[chip*32 + chan] += ct
@@ -52,7 +55,7 @@ def make_mars_heatmap(h, bins):
     for ev in db.get_events(h, fill=True):
         df = pd.DataFrame(ev['data'])
         for (chip, chan), group in (df[['germ_chip', 'germ_chan', 'germ_pd']]
-                         .groupby(('germ_chip', 'germ_chan'))):
+                                    .groupby(('germ_chip', 'germ_chan'))):
             gpd = group['germ_pd'].values
             line[:, int(chip*32 + chan)] += np.histogram(gpd, bins)[0]
 
