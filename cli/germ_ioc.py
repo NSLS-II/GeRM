@@ -3,6 +3,7 @@ import curio.zmq as zmq
 from caproto.curio.server import Context, find_next_tcp_port
 from pygerm.caproto import GeRMIOC
 from portable_fs.sqlite.fs import FileStore
+import argparse
 
 
 def create_server(zmq_url, fs):
@@ -22,12 +23,19 @@ def create_server(zmq_url, fs):
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        description='IOC to front GeRM zmq server')
+    parser.add_argument('host', type=str,
+                        help='host running GeRM zmq server')
+    args = parser.parse_args()
+
+    zmq_ip = args.host
+
     fs = FileStore({'dbpath': '/tmp/fs.sqlite'})
-    ctx, germ = create_server('tcp://10.0.143.160', fs)
+    ctx, germ = create_server(f'tcp://{zmq_ip}', fs)
 
     async def runner():
         await curio.spawn(germ.zclient.read_forever, daemon=True)
         await ctx.run()
 
     zmq.run(runner)
-
