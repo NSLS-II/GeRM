@@ -3,19 +3,19 @@ support for GeRM
 
 This includes
 
- - ØMQ server to run on the zinc board to expose the FPGA registers
-   and publish the measured data :file:`src/germ_zserver1.c`
- - ØMQ consumer in python :file:`pygerm/zmq.py`
- - a python IOC for exposing the GeRM to epics (:file:`pygerm/caproto.py`
-   and :file:`cli/germ_ioc.py`).  This IOC writes the measured data to
-   hdf5 files and inserts documents in to a ``FileStore`` instance.
- - Classes for exposing the IOC to ophyd/bluesky (:file:`pygerm/ophyd.py`)
- - Handler for reading the files written by the IOC back through
-   ``DataBroker`` (:file:`pygerm/handler.py`)
- - A simulated detector for testing (:file:`cli/det_sim.py`)
- - An example configuration file (:file:`config/97-germ.py`)
- - Qt GUI to test triggering the detector (:file:`MARS_DAQ_qt.py`)
- - Qt GUI for ASIC configuration (:file:`AJK_parametertree.py`)
+- ØMQ server to run on the zinc board to expose the FPGA registers
+  and publish the measured data :file:`src/germ_zserver1.c`
+- ØMQ consumer in python :file:`pygerm/zmq.py`
+- a python IOC for exposing the GeRM to epics (:file:`pygerm/caproto.py`
+  and :file:`cli/germ_ioc.py`).  This IOC writes the measured data to
+  hdf5 files and inserts documents in to a ``FileStore`` instance.
+- Classes for exposing the IOC to ophyd/bluesky (:file:`pygerm/ophyd.py`)
+- Handler for reading the files written by the IOC back through
+  ``DataBroker`` (:file:`pygerm/handler.py`)
+- A simulated detector for testing (:file:`cli/det_sim.py`)
+- An example configuration file (:file:`config/97-germ.py`)
+- Qt GUI to test triggering the detector (:file:`MARS_DAQ_qt.py`)
+- Qt GUI for ASIC configuration (:file:`AJK_parametertree.py`)
 
 
 Testing
