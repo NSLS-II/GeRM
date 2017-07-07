@@ -4,6 +4,7 @@ import zmq.asyncio
 import numpy as np
 from enum import Enum
 from collections import defaultdict
+import time
 
 
 class CMDS(Enum):
@@ -28,16 +29,49 @@ asyncio.set_event_loop(loop)
 # average number of events per msg
 N = 50000
 # number of messages
-n_msgs = 5
+n_msgs = 50
 # average total exposure
 simulated_exposure = 10
 # expected ticks between events
 # ([S] / [event]) * ([tick] / [s]) = [tick] / [event]
 tick_gap = int((simulated_exposure / N) / (40 * 10e-9))
 
+n_chips = 4
+n_chans = 2
+
 
 def simulate_line(n):
+    return np.clip(
+        (2**6 * np.random.randn(n)) + 2**11,
+        0, 2**12 - 1).astype(np.uint64)
+
+
+def simulate_random(n):
     return np.random.randint(2**12, size=n, dtype=np.uint64)
+
+
+def make_sim_payload(num, n_chips, n_chans, tick_gap, ts_offset):
+    # simulate 4 active chips
+    # chip_id = np.random.randint(4, size=num, dtype=np.uint64) << (27+32)
+    chip_id = ((np.arange(num, dtype=np.uint64) //
+                n_chips) %
+               n_chips) << (27)
+    # simulate 4 active channels per chip
+    chan_id = ((np.arange(num, dtype=np.uint64) %
+                n_chips) %
+               n_chans) << (22)
+    # chan_id = np.random.randint(4, size=num, dtype=np.uint64) << (22+32)
+    # fine timestamp
+    td = np.random.randint(2**10, size=num, dtype=np.uint64) << (12)
+    # energy
+    pd = simulate_line(num)
+    # coarse timestamp
+    ts = np.mod((np.cumsum(
+        np.random.poisson(tick_gap, size=num).astype(np.uint64)) +
+                 ts_offset),
+                2**31) << 32
+    payload = chip_id + chan_id + td + pd + ts
+    return payload, ts[-1]
 
 
 @asyncio.coroutine
@@ -55,26 +89,17 @@ def recv_and_process():
         nonlocal ts_offset
         state[FRAMENUMREG] += 1
         num_per_msg = np.random.poisson(N, size=n_msgs)
+        ts_offset = 0
         for num in num_per_msg:
-            # simulate 4 active chips
-            chip_id = np.random.randint(4, size=num, dtype=np.uint64) << (27+32)
-            # simulate 4 active channels per chip
-            chan_id = np.random.randint(4, size=num, dtype=np.uint64) << (22+32)
-            # fine timestamp
-            td = np.random.randint(2**10, size=num, dtype=np.uint64) << (12+32)
-            # energy
-            pd = simulate_line(num) << 32
-            # coarse timestamp
-            ts = np.mod((np.cumsum(np.random.poisson(tick_gap, size=num)) +
-                         ts_offset),
-                        2**31)
-            ts_offset = ts[-1]
-            payload = chip_id + chan_id + td + pd + ts_offset
-            yield from publisher.send_multipart([b'data',
-                                                 payload])
+            payload, ts_offset = make_sim_payload(num,
+                                                  n_chips, n_chans,
+                                                  tick_gap,
+                                                  ts_offset)
+            yield from publisher.send_multipart([b'data', payload])
 
         yield from publisher.send_multipart([b'meta',
                                              np.uint32(state[FRAMENUMREG])])
+        return np.sum(num_per_msg, dtype=np.intp)
 
     while True:
         msg = yield from responder.recv_multipart()
@@ -85,7 +110,10 @@ def recv_and_process():
                 state[addr] = value
                 yield from responder.send(m)
                 if addr == 0 and value == 1:
-                    yield from sim_data()
+                    start_time = time.time()
+                    num_ev = yield from sim_data()
+                    delta_time = time.time() - start_time
+                    print(f'generated {num_ev} events in {delta_time} s')
             elif cmd == CMDS.REG_READ:
                 value = state[addr]
                 reply = np.array([cmd.value, addr, value], dtype=np.uint32)

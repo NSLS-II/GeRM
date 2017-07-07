@@ -1,5 +1,6 @@
 import numpy as np
 import datetime
+from collections import OrderedDict
 
 
 def parse_event_payload(data):
@@ -18,17 +19,24 @@ def parse_event_payload(data):
     # TODO sort out if this can be made faster!
 
     # chip addr
-    chip = (data >> (27 + 32)) & 0xf
+    chip = (data >> (27)) & 0xf
     # chan addr
-    chan = (data >> (22 + 32)) & 0x1f
+    chan = (data >> (22)) & 0x1f
     # fine ts
-    td = (data >> (12 + 32)) & 0x3ff
+    td = (data >> (12)) & 0x3ff
     # evergy readings
-    pd = (data >> 32) & 0xfff
+    pd = (data) & 0xfff
     # FPGA tick
-    ts = data & 0x7fffffff
+    ts = data >> 32 & 0x7fffffff
 
     return chip, chan, td, pd, ts
+
+
+DATA_TYPES = OrderedDict((('chip', 8),
+                          ('chan', 8),
+                          ('timestamp_fine', 16),
+                          ('energy', 16),
+                          ('timestamp_coarse', 32)))
 
 
 class ZClient(object):
@@ -42,7 +50,8 @@ class ZClient(object):
 
     def __init__(self, url, *, zmq):
         self.__context = zmq.Context()
-        self.data_sock = self.__context.socket(zmq.SUB)
+        self._data_sock_class = zmq.SUB
+        self.data_sock = self.__context.socket(self._data_sock_class)
         self.ctrl_sock = self.__context.socket(zmq.REQ)
 
         self.data_sock.connect("{}:{}".format(url, self.ZMQ_DATA_PORT))
@@ -50,6 +59,26 @@ class ZClient(object):
         self.data_sock.setsockopt(zmq.SUBSCRIBE, self.TOPIC_META)
 
         self.ctrl_sock.connect("{}:{}".format(url, self.ZMQ_CNTL_PORT))
+
+    def parse_message(self, topic, payload):
+
+        if topic == self.TOPIC_DATA:
+            payload = parse_event_payload(
+                np.frombuffer(payload, np.uint64))
+        else:
+            payload = np.frombuffer(payload, np.uint32)
+        return topic, payload
+
+    def refresh_data_sock(self):
+        print('a')
+        self.data_sock.close(linger=0)
+        print('b')
+        try:
+            self.data_sock = self.__context.socket(self._data_sock_class)
+        except Exception as e:
+            print(e)
+            print('failed to remake socket')
+        print('c')
 
 
 class ZClientWriter(ZClient):
@@ -133,6 +162,7 @@ class ZClientWriter(ZClient):
 
         print("Total Size: %d (%d bytes)" % (totallen * 2, totallen * 8))
         bitrate = (totallen*2) / sec
-        print('Received %d frames at %f MBps' % (self.nbr, bitrate))
+        print('Received %d messages at %f MBps' % (self.nbr, bitrate))
+        print('Received %d events at %f ev/s' % (len(pd), len(pd) / sec))
 
         return totallen, bitrate, pd, td, addr

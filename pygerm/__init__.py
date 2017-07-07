@@ -11,6 +11,7 @@ TRIGGER_SETUP_SEQ = (
     (0x68, 0),
     (None, 0.01),
     (0x68, 1),
+    (0xD0, 1)
 )
 
 START_DAQ = (0x0, 1)

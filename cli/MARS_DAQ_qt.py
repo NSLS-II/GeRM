@@ -3,18 +3,18 @@
 #
 from __future__ import division
 from __future__ import print_function
-from builtins import range
+import argparse
 from pygerm.zmq import ZClientWriter
 from pygerm import TRIGGER_SETUP_SEQ, START_DAQ, STOP_DAQ
 
 import time as tm
 
-import numpy as np
+
 import matplotlib
 matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
-plt.ion()
 from matplotlib.backends.qt_compat import QtWidgets, QtCore
+plt.ion()
 
 
 # Create an QApplication object.
@@ -37,10 +37,21 @@ btn_q = QtWidgets.QPushButton('Quit!', w)
 btn_trig = QtWidgets.QPushButton('DAQ Trigger', w)
 
 
+parser = argparse.ArgumentParser(
+    description='Qt GUI to test GeRM zmq servec')
+parser.add_argument('host', type=str,
+                    help='host running GeRM zmq server')
+
+args = parser.parse_args()
+
+zmq_ip = args.host
+
+
 @QtCore.Slot()
 def on_trig():
     print('triggered')
-    ip_addr = 'tcp://localhost' #"tcp://10.0.143.100"
+    # ip_addr = "tcp://10.0.143.160"
+    ip_addr = f"tcp://{zmq_ip}"
     zc = ZClientWriter(ip_addr)
     for (addr, val) in TRIGGER_SETUP_SEQ:
         if addr is None:
