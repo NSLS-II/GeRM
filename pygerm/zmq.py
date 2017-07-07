@@ -162,6 +162,7 @@ class ZClientWriter(ZClient):
 
         print("Total Size: %d (%d bytes)" % (totallen * 2, totallen * 8))
         bitrate = (totallen*2) / sec
-        print('Received %d frames at %f MBps' % (self.nbr, bitrate))
+        print('Received %d messages at %f MBps' % (self.nbr, bitrate))
+        print('Received %d events at %f ev/s' % (len(pd), len(pd) / sec))
 
         return totallen, bitrate, pd, td, addr

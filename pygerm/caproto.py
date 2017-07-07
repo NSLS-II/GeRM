@@ -7,6 +7,7 @@ import curio.zmq as zmq
 from pygerm.zmq import ZClient, DATA_TYPES
 from pygerm import TRIGGER_SETUP_SEQ, START_DAQ, STOP_DAQ
 import uuid
+import time
 
 
 class ZClientCaproto(ZClient):
@@ -37,10 +38,8 @@ class ZClientCaproto(ZClient):
 
     async def read_forever(self):
         while True:
-            print(f'read forever {self.collecting}')
             # just read from the zmq socket
             topic, payload = await self.data_sock.recv_multipart()
-            print(f'topic {topic}')
             # if we are not collecting, then bail and read again!
             if not self.collecting:
                 continue
@@ -92,23 +91,24 @@ class ChannelGeRMAcquire(ca.ChannelData):
     async def set_dbr_data(self, data, data_type, metadata):
         await super().set_dbr_data(data, data_type, metadata)
         if data:
+            start_time = time.time()
             fr_num, ev_count, data = await triggered_frame(self.zclient)
-            print(fr_num, ev_count)
+            delta_time = time.time() - start_time
+            print(f'read frame: {fr_num} with {ev_count} '
+                  f'events in {delta_time}s ({ev_count / delta_time} ev/s )')
             await self.parent.count_channel.set_dbr_data(
                 ev_count, ca.DBR_INT.DBR_ID, None)
             try:
+                start_time = time.time()
                 write_path = self.parent.filepath_channel.value
                 write_path = write_path.decode(
                     self.parent.filepath_channel.string_encoding)
                 if write_path:
                     path = Path(write_path)
-                    print(path)
                     path.mkdir(parents=True, exist_ok=True)
 
                     fname = path / '{}.h5'.format(str(uuid.uuid4()))
-                    print(fname)
                     with h5py.File(str(fname), 'w-') as fout:
-                        print('made file')
                         g = fout.create_group('GeRM')
                         dsets = {k: g.create_dataset(k, shape=(ev_count,),
                                                      dtype=f'uint{w}')
@@ -132,8 +132,12 @@ class ChannelGeRMAcquire(ca.ChannelData):
                             chan = getattr(self.parent, chan_name)
                             dset_uid = str(uuid.uuid4())
                             fs.insert_datum(res, dset_uid, {'column': dset})
+
                             await chan.set_dbr_data(
                                 dset_uid, ca.DBR_STRING.DBR_ID, None)
+                delta_time = time.time() - start_time
+                print(f'wrote frame: {fr_num} with {ev_count} '
+                      f'events in {delta_time}s ({ev_count / delta_time} ev/s )')
 
             except Exception as e:
                 print(data_type)
@@ -181,7 +185,7 @@ async def triggered_frame(zc):
     await zc.write(*START_DAQ)
     # cal pulse for debugging sometimes
     # await zc.write(0x10, 0xfff)
-    # await zc.write(0x10, 0x0)    
+    # await zc.write(0x10, 0x0)
     fr_num, ev_count, data = await zc.read_frame()
     await zc.write(*STOP_DAQ)
 

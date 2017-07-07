@@ -4,6 +4,7 @@ import zmq.asyncio
 import numpy as np
 from enum import Enum
 from collections import defaultdict
+import time
 
 
 class CMDS(Enum):
@@ -28,7 +29,7 @@ asyncio.set_event_loop(loop)
 # average number of events per msg
 N = 50000
 # number of messages
-n_msgs = 5
+n_msgs = 50
 # average total exposure
 simulated_exposure = 10
 # expected ticks between events
@@ -95,10 +96,10 @@ def recv_and_process():
                                                   tick_gap,
                                                   ts_offset)
             yield from publisher.send_multipart([b'data', payload])
-            yield from asyncio.sleep(.1)
 
         yield from publisher.send_multipart([b'meta',
                                              np.uint32(state[FRAMENUMREG])])
+        return np.sum(num_per_msg, dtype=np.intp)
 
     while True:
         msg = yield from responder.recv_multipart()
@@ -109,7 +110,10 @@ def recv_and_process():
                 state[addr] = value
                 yield from responder.send(m)
                 if addr == 0 and value == 1:
-                    yield from sim_data()
+                    start_time = time.time()
+                    num_ev = yield from sim_data()
+                    delta_time = time.time() - start_time
+                    print(f'generated {num_ev} events in {delta_time} s')
             elif cmd == CMDS.REG_READ:
                 value = state[addr]
                 reply = np.array([cmd.value, addr, value], dtype=np.uint32)
