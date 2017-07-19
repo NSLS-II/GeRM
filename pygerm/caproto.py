@@ -101,9 +101,8 @@ class ChannelGeRMAcquire(ca.ChannelData):
             try:
                 start_time = time.time()
                 write_path = self.parent.filepath_channel.value
-                write_path = write_path.decode(
-                    self.parent.filepath_channel.string_encoding)
-                if write_path:
+                write_path = bytes(write_path).decode('utf-8').strip('\x00')
+                if len(write_path):
                     path = Path(write_path)
                     path.mkdir(parents=True, exist_ok=True)
 
@@ -137,7 +136,8 @@ class ChannelGeRMAcquire(ca.ChannelData):
                                 dset_uid, ca.DBR_STRING.DBR_ID, None)
                 delta_time = time.time() - start_time
                 print(f'wrote frame: {fr_num} with {ev_count} '
-                      f'events in {delta_time}s ({ev_count / delta_time} ev/s )')
+                      f'events in {delta_time}s '
+                      f'({ev_count / delta_time} ev/s )')
 
             except Exception as e:
                 print(data_type)
@@ -155,8 +155,8 @@ class GeRMIOC:
         self.acquire_channel = ChannelGeRMAcquire(
             value=0, zclient=self.zclient, parent=self)
 
-        self.filepath_channel = ca.ChannelString(
-            value=b'/tmp', string_encoding='latin-1')
+        self.filepath_channel = ca.ChannelChar(
+            value='/tmp', string_encoding='latin-1')
         self.last_file_channel = ca.ChannelString(
             value='null', string_encoding='latin-1')
 
