@@ -1,7 +1,6 @@
 import os
 from ophyd import Device, Component as Cpt, EpicsSignal, EpicsSignalRO
-import numpy as np
-import pandas as pd
+
 
 os.environ['EPICS_CA_ADDR_LIST'] = 'localhost'
 
@@ -18,11 +17,20 @@ class GeRMSRO(EpicsSignalRO):
 
 
 class GeRM(Device):
+    # go button
     acquire = Cpt(EpicsSignal, ':acquire', put_complete=True)
-    filepath = Cpt(EpicsSignal, ':filepath', string=True)
+    # exposure per frame
+    frametime = Cpt(EpicsSignal, ':frametime', put_complete=True)
+    # data path
+    filepath = Cpt(EpicsSignal, ':filepath',
+                   string=True, put_complete=True)
+
+    # where the last file was written
     last_file = Cpt(EpicsSignalRO, ':last_file', string=True)
 
+    # number of events
     count = Cpt(EpicsSignalRO, ':COUNT')
+    # fs uuids
     chip = Cpt(GeRMSRO, ':UUID:CHIP', string=True)
     chan = Cpt(GeRMSRO, ':UUID:CHAN', string=True)
     td = Cpt(GeRMSRO, ':UUID:TD', string=True)
@@ -31,5 +39,3 @@ class GeRM(Device):
 
     def trigger(self):
         return self.acquire.set(1)
-
-

@@ -26,7 +26,10 @@ RE.subscribe('all', db.insert)
 # create the GeRM object
 germ = GeRM('germ', name='germ', read_attrs=['filepath', 'last_file',
                                              'chip', 'chan',
-                                             'td', 'pd', 'ts', 'count'])
+                                             'td', 'pd', 'ts', 'count'],
+            configuration_attrs=['frametime'])
+
+
 # gaussian fit
 from lmfit import Model
 def gaussian(x, area, center, sigma):

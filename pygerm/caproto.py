@@ -147,6 +147,30 @@ class ChannelGeRMAcquire(ca.ChannelData):
             await super().set_dbr_data(0, data_type, None)
 
 
+class ChannelGeRMFrameTime(ca.ChannelDouble):
+
+    RESOLUTION = 4e-8  # 40 ns
+    MAXT = (2**32 - 1) * RESOLUTION
+
+    def __init__(self, zclient, *, units='s', **kwargs):
+        kwargs.setdefault('precision', 3)
+        kwargs.setdefault('lower_ctrl_limit', 0)
+        kwargs.setdefault('upper_ctrl_limit', self.MAXT)
+        super().__init__(units=units, **kwargs)
+        self.zclient = zclient
+
+    async def set_dbr_data(self, data, data_type, metadata):
+        data, = data
+        print(f'in set dbr {data}, {self.MAXT}')
+
+        if data > self.MAXT or data < 0:
+            # TODO set an alarm or something
+            return
+        counts = data / self.RESOLUTION
+        await self.zclient.write(0xd4, np.int32(counts))
+        await super().set_dbr_data([data, ], data_type, metadata)
+
+
 class GeRMIOC:
     def __init__(self, zmq_url, fs):
         self._fs = fs
@@ -154,6 +178,9 @@ class GeRMIOC:
 
         self.acquire_channel = ChannelGeRMAcquire(
             value=0, zclient=self.zclient, parent=self)
+
+        self.frametime_channel = ChannelGeRMFrameTime(
+            value=1, zclient=self.zclient)
 
         self.filepath_channel = ca.ChannelChar(
             value='/tmp', string_encoding='latin-1')

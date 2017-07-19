@@ -7,9 +7,11 @@ import argparse
 
 prefix = 'XF:28IDC-ES:1{Det:GeRM1}'
 
+
 def create_server(zmq_url, fs):
     germ = GeRMIOC(zmq_url, fs)
     pvdb = {f'{prefix}:acquire': germ.acquire_channel,
+            f'{prefix}:frametime': germ.frametime_channel,
             f'{prefix}:filepath': germ.filepath_channel,
             f'{prefix}:last_file': germ.last_file_channel,
             f'{prefix}:COUNT': germ.count_channel,
