@@ -24,7 +24,7 @@ RE.subscribe('all', db.insert)
 
 
 # create the GeRM object
-germ = GeRM('germ', name='germ', read_attrs=['filepath', 'last_file',
+germ = GeRM('XF:28IDC-ES:1{Det:GeRM1}', name='germ', read_attrs=['filepath', 'last_file',
                                              'chip', 'chan',
                                              'td', 'pd', 'ts', 'count'],
             configuration_attrs=['frametime'])
