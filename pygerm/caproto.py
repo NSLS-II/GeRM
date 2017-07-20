@@ -18,6 +18,7 @@ class ZClientCaproto(ZClient):
         self.data_buffer = []
         self.last_frame = None
         self.max_events = max_events
+        self.cmd_lock = curio.Lock()
 
     async def __cntrl_recv(self):
         msg = await self.ctrl_sock.recv()
@@ -28,13 +29,18 @@ class ZClientCaproto(ZClient):
         return (await self.ctrl_sock.send(payload))
 
     async def read(self, addr):
-        await self.__cntrl_send([0x0, addr, 0x0])
-        return (await self.__cntrl_recv()[2])
+        async with self.cmd_lock:
+            await self.__cntrl_send([0x0, addr, 0x0])
+            ret = await self.__cntrl_recv()
+            return ret[2]
 
     async def write(self, addr, value):
-        await self.__cntrl_send([0x1, addr, value])
-        # bounce the whole message back
-        return (await self.__cntrl_recv())
+        print(f'writting addr 0x{addr:x} val {value}')
+        async with self.cmd_lock:
+            await self.__cntrl_send([0x1, addr, value])
+            # bounce the whole message back
+            ret = await self.__cntrl_recv()
+            return ret
 
     async def read_forever(self):
         while True:
@@ -161,19 +167,21 @@ class ChannelGeRMFrameTime(ca.ChannelDouble):
 
     async def set_dbr_data(self, data, data_type, metadata):
         data, = data
-        print(f'in set dbr {data}, {self.MAXT}')
 
         if data > self.MAXT or data < 0:
             # TODO set an alarm or something
             return
         counts = data / self.RESOLUTION
         await self.zclient.write(0xd4, np.int32(counts))
-        await super().set_dbr_data([data, ], data_type, metadata)
+        ret = await super().set_dbr_data(data, data_type, metadata)
+        return ret
 
     async def get_dbr_data(self, type_):
         v = await self.zclient.read(0xd4)
+        v *= self.RESOLUTION
         self.value = [v, ]
-        return (await super().get_dbr_data(type_))
+        ret = await super().get_dbr_data(type_)
+        return ret
 
 
 class GeRMIOC:
@@ -208,7 +216,6 @@ class GeRMIOC:
 
 async def triggered_frame(zc):
     for (addr, val) in TRIGGER_SETUP_SEQ:
-        print(f'addr {addr} val {val}')
         if addr is None:
             await curio.sleep(val)
         else:
