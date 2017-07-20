@@ -124,10 +124,12 @@ def make_mars_heatmap(h):
 
 
 
-def make_mars_heatmap_after_correction(h, corr_mat, minv=0, maxv=70, bin_num=2000):
+def make_mars_heatmap_after_correction(h, corr_mat=None, minv=0, maxv=70, bin_num=2000):
     '''Make a spectrum khymography
 
     '''
+    if corr_mat is None:
+        corr_mat = cal_val
     bin_edges = np.linspace(minv, maxv, bin_num+1, endpoint=True)
     line = np.zeros((bin_num, 12*32))
     for ev in db.get_events(h, fill=True):
@@ -140,8 +142,11 @@ def make_mars_heatmap_after_correction(h, corr_mat, minv=0, maxv=70, bin_num=200
             line[:, i] += np.histogram(eng_arr, bins=bin_edges)[0]
             #line[:, i] += np.bincount(gpd, minlength=bins)
     return line, bin_edges
+import os
+from pathlib import Path
 
-
+_cal_file = Path(os.path.realpath(__file__)).parent / 'calibration_martix.txt'
+cal_val = np.loadtxt(str(_cal_file))
 
 # How to take a count
 # http://nsls-ii.github.io/bluesky/plans_intro.html
