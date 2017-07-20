@@ -5,19 +5,19 @@ from pygerm.caproto import GeRMIOC
 from portable_fs.sqlite.fs import FileStore
 import argparse
 
+prefix = 'XF:28IDC-ES:1{Det:GeRM1}'
 
 def create_server(zmq_url, fs):
     germ = GeRMIOC(zmq_url, fs)
-    pvdb = {'germ:acquire': germ.acquire_channel,
-            'germ:filepath': germ.filepath_channel,
-            'germ:last_file': germ.last_file_channel,
-            'germ:COUNT': germ.count_channel,
-
-            'germ:UUID:CHIP': germ.uid_chip_channel,
-            'germ:UUID:CHAN': germ.uid_chan_channel,
-            'germ:UUID:TD': germ.uid_td_channel,
-            'germ:UUID:PD': germ.uid_pd_channel,
-            'germ:UUID:TS': germ.uid_ts_channel,
+    pvdb = {f'{prefix}:acquire': germ.acquire_channel,
+            f'{prefix}:filepath': germ.filepath_channel,
+            f'{prefix}:last_file': germ.last_file_channel,
+            f'{prefix}:COUNT': germ.count_channel,
+            f'{prefix}:UUID:CHIP': germ.uid_chip_channel,
+            f'{prefix}:UUID:CHAN': germ.uid_chan_channel,
+            f'{prefix}:UUID:TD': germ.uid_td_channel,
+            f'{prefix}:UUID:PD': germ.uid_pd_channel,
+            f'{prefix}:UUID:TS': germ.uid_ts_channel,
             }
     return Context('0.0.0.0', find_next_tcp_port(), pvdb), germ
 
