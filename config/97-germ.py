@@ -46,17 +46,18 @@ def make_mars_line(h, thresh=1000):
     return line
 
 
-def make_mars_heatmap(h, bins):
+def make_mars_heatmap(h):
     '''Make a spectrum khymography
 
     '''
-    line = np.zeros((len(bins)-1, 12*32))
+    bins = 4096
+    line = np.zeros((bins, 12*32))
     for ev in db.get_events(h, fill=True):
         df = pd.DataFrame(ev['data'])
         for (chip, chan), group in (df[['germ_chip', 'germ_chan', 'germ_pd']]
                                     .groupby(('germ_chip', 'germ_chan'))):
             gpd = group['germ_pd'].values
-            line[:, int(chip*32 + chan)] += np.histogram(gpd, bins)[0]
+            line[:, int(chip*32 + chan)] += np.bincount(gpd, minlength=bins)
 
     return line
 
