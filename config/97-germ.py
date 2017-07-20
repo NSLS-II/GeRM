@@ -39,23 +39,13 @@ def gaussian(x, area, center, sigma):
 def linear(x, a, b):
     return a*x+b
 
-gauss_mod1 = Model(gaussian, prefix='g1_')
-gauss_mod2 = Model(gaussian, prefix='g2_')
-gauss_mod3 = Model(gaussian, prefix='g3_')
 
-# add constraints
-gauss_mod1.set_param_hint(name='g1_center', value=1000, vary=True, min=800, max=1400)
-gauss_mod2.set_param_hint(name='g2_center', value=1100, vary=True, min=800, max=1400)
-gauss_mod3.set_param_hint(name='g3_center', value=3500, vary=True, min=3100, max=3900)
-gauss_mod2.set_param_hint(name='g2_sigma', value=20, vary=True, min=5, max=30)
-
-gauss_mod = gauss_mod1+gauss_mod2+gauss_mod3
-
-params = gauss_mod.make_params(g1_center=1053, g1_area=1000, g1_sigma=10.0,
-                               g2_center=1186, g2_area=1000, g2_sigma=10.0,
-                               g3_center=3587, g3_area=1000, g3_sigma=10.0)
-
-def fit_all_channels(data, gauss_mod=gauss_mod):
+def fit_all_channels(data):
+    gauss_mod1 = Model(gaussian, prefix='g1_')
+    gauss_mod2 = Model(gaussian, prefix='g2_')
+    gauss_mod3 = Model(gaussian, prefix='g3_')
+    
+    gauss_mod = gauss_mod1+gauss_mod2+gauss_mod3
 
     g1_cen_list = []
     g2_cen_list = []
@@ -65,6 +55,9 @@ def fit_all_channels(data, gauss_mod=gauss_mod):
         print(v)
         g1_cen = 800+np.argmax(data[800:1400,v])
         g3_cen = 3100+np.argmax(data[3100:3900, v])
+        gauss_mod.set_param_hint('g1_center', value=g1_cen, vary=True, min=g1_cen-30, max=g1_cen+30)
+        gauss_mod.set_param_hint(name='g1_sigma', value=20, vary=True, min=5, max=40)
+        gauss_mod.set_param_hint(name='g2_sigma', value=20, vary=True, min=5, max=40)
         params = gauss_mod.make_params(g1_center=g1_cen, g1_area=1000, g1_sigma=10.0,
                                        g2_center=g1_cen+150, g2_area=1000, g2_sigma=10.0,
                                	       g3_center=g3_cen, g3_area=1000, g3_sigma=10.0)
@@ -76,21 +69,25 @@ def fit_all_channels(data, gauss_mod=gauss_mod):
 
 
 def get_calibration_value(cen_data, y):
-    """Calculate calibration based on bin center and energy value.
+    """Linear regression to calculate calibration based on bin center and energy value.
+    
     Parameters
     ----------
-    cen_data :
-        2D array with shape [number of channels, 3]
-
+    cen_data : 
+        2D array with shape [number of data, number of x]
+    
+    Output
+    ------
+    2d array:
+        shape [2, number of data], First data is slope and the second is intercept.    
     """
     from scipy.stats import linregress
-    cal_val = np.zeros(cen_data.shape[0], 2)  # shape is [number of channels, 2]
-    for i in range(cen_data.shape[0]):
-        out = linregress(cen_data[i,:].T, y)
-        cal_val[i, 0] = out[0]
-        cal_val[i, 1] = out[1]
+    cal_val = np.zeros([2, cen_data.shape[1]])  # shape is [number of channels, 2]
+    for i in range(cen_data.shape[1]):
+        out = linregress(cen_data[:, i], y)
+        cal_val[0, i] = out[0]
+        cal_val[1, i] = out[1] 
     return cal_val
-
 
 
 def make_mars_line(h, thresh=1000):
@@ -124,6 +121,27 @@ def make_mars_heatmap(h):
             line[:, int(chip*32 + chan)] += np.bincount(gpd, minlength=bins)
 
     return line
+
+
+
+def make_mars_heatmap_after_correction(h, corr_mat, minv=0, maxv=70, bin_num=2000):
+    '''Make a spectrum khymography
+
+    '''
+    bin_edges = np.linspace(minv, maxv, bin_num+1, endpoint=True)
+    line = np.zeros((bin_num, 12*32))
+    for ev in db.get_events(h, fill=True):
+        df = pd.DataFrame(ev['data'])
+        for (chip, chan), group in (df[['germ_chip', 'germ_chan', 'germ_pd']]
+                                    .groupby(('germ_chip', 'germ_chan'))):
+            gpd = group['germ_pd'].values
+            i = int(chip*32+chan)
+            eng_arr = gpd*corr_mat[0, i] + corr_mat[1, i]
+            line[:, i] += np.histogram(eng_arr, bins=bin_edges)[0]
+            #line[:, i] += np.bincount(gpd, minlength=bins)
+    return line, bin_edges
+
+
 
 # How to take a count
 # http://nsls-ii.github.io/bluesky/plans_intro.html
