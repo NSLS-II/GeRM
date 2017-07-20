@@ -27,6 +27,9 @@ class GeRM(Device):
 
     # where the last file was written
     last_file = Cpt(EpicsSignalRO, ':last_file', string=True)
+    
+    overfill = Cpt(EpicsSignalRO, ':overfill')
+    last_frame = Cpt(EpicsSignalRO, ':last_frame')
 
     # number of events
     count = Cpt(EpicsSignalRO, ':COUNT')

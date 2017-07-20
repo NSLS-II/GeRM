@@ -14,6 +14,10 @@ def create_server(zmq_url, fs):
             f'{prefix}:frametime': germ.frametime_channel,
             f'{prefix}:filepath': germ.filepath_channel,
             f'{prefix}:last_file': germ.last_file_channel,
+
+            f'{prefix}:overfill': germ.overfill_channel,
+            f'{prefix}:last_frame': germ.last_frame_channel,
+            
             f'{prefix}:COUNT': germ.count_channel,
             f'{prefix}:UUID:CHIP': germ.uid_chip_channel,
             f'{prefix}:UUID:CHAN': germ.uid_chan_channel,

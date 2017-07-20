@@ -17,6 +17,7 @@ class ZClientCaproto(ZClient):
         self.collecting = False
         self.data_buffer = []
         self.last_frame = None
+        self.overfill = 0
         self.max_events = max_events
         self.cmd_lock = curio.Lock()
 
@@ -52,7 +53,8 @@ class ZClientCaproto(ZClient):
             # if we are collecting, unpack the payload
             topic, data = self.parse_message(topic, payload)
             if topic == self.TOPIC_META:
-                self.last_frame = int(data)
+                self.last_frame, self.overfill = data
+
                 # if we saw a frame meta, we are done
                 async with self.acq_done:
                     await self.acq_done.notify_all()
@@ -84,7 +86,8 @@ class ZClientCaproto(ZClient):
 
     async def read_frame(self):
         await self.trigger_frame()
-        return self.last_frame, self.total_events, self.data_buffer
+        return (self.last_frame, self.total_events,
+                self.data_buffer, self.overfill)
 
 
 class ChannelGeRMAcquire(ca.ChannelData):
@@ -98,12 +101,16 @@ class ChannelGeRMAcquire(ca.ChannelData):
         await super().set_dbr_data(data, data_type, metadata)
         if data:
             start_time = time.time()
-            fr_num, ev_count, data = await triggered_frame(self.zclient)
+            fr_num, ev_count, data, overfill = await triggered_frame(self.zclient)
             delta_time = time.time() - start_time
             print(f'read frame: {fr_num} with {ev_count} '
                   f'events in {delta_time}s ({ev_count / delta_time} ev/s )')
             await self.parent.count_channel.set_dbr_data(
                 ev_count, ca.DBR_INT.DBR_ID, None)
+            await self.parent.overfill_channel.set_dbr_data(
+                overfill, ca.DBR_INT.DBR_ID, None)
+            await self.parent.last_frame_channel.set_dbr_data(
+                fr_num, ca.DBR_INT.DBR_ID, None)
             try:
                 start_time = time.time()
                 write_path = self.parent.filepath_channel.value
@@ -201,6 +208,8 @@ class GeRMIOC:
             value='null', string_encoding='latin-1')
 
         self.count_channel = ca.ChannelInteger(value=0)
+        self.overfill_channel = ca.ChannelInteger(value=0)
+        self.last_frame_channel = ca.ChannelInteger(value=0)
 
         self.uid_chip_channel = ca.ChannelString(
             value='null', string_encoding='latin-1')
@@ -225,10 +234,10 @@ async def triggered_frame(zc):
     # cal pulse for debugging sometimes
     # await zc.write(0x10, 0xfff)
     # await zc.write(0x10, 0x0)
-    fr_num, ev_count, data = await zc.read_frame()
+    fr_num, ev_count, data, overfill = await zc.read_frame()
     await zc.write(*STOP_DAQ)
 
-    return fr_num, ev_count, data
+    return fr_num, ev_count, data, overfill
 
 
 async def runner(germ):
