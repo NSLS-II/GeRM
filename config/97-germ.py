@@ -42,7 +42,6 @@ def make_mars_line(h, thresh=1000):
                  .apply(lambda g: np.sum(g > thresh))['germ_pd'])
                 .reset_index()
                 .iterrows()):
-            print(chip, chan, ct)
             line[chip*32 + chan] += ct
     return line
 
