@@ -30,8 +30,8 @@ class zclient(object):
 
     ZMQ_DATA_PORT = "5556"
     ZMQ_CNTL_PORT = "5555"
-    TOPIC_DATA = "data"
-    TOPIC_META = "meta"
+    TOPIC_DATA = b"data"
+    TOPIC_META = b"meta"
 
     def __init__(self, connect_str):
         self.__context = zmq.Context()
@@ -406,7 +406,7 @@ params_2 = [
 p = Parameter.create(name='params', type='group', children=params)
 p2 = Parameter.create(name='params_2', type='group', children=params_2)
 
-ip_addr = "tcp://10.0.143.160"
+ip_addr = "tcp://10.28.0.47"
 zc = zclient(ip_addr)
 
 
