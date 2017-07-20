@@ -170,6 +170,11 @@ class ChannelGeRMFrameTime(ca.ChannelDouble):
         await self.zclient.write(0xd4, np.int32(counts))
         await super().set_dbr_data([data, ], data_type, metadata)
 
+    async def get_dbr_data(self, type_):
+        v = await self.zclient.read(0xd4)
+        self.value = [v, ]
+        return (await super().get_dbr_data(type_))
+
 
 class GeRMIOC:
     def __init__(self, zmq_url, fs):
