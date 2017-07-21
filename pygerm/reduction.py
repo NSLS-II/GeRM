@@ -61,15 +61,20 @@ def select_energy_band(spectrum, energy_bins, lo, hi):
     return spectrum[lo_ind:hi_ind].sum(axis=0)
 
 
-def sum_spectra(spectrum_list, detector_angles, angle_bins, *,
-                pixel_scale=0.01741, pixel_offset=0):
+def stack_1D_spectrum(spectrum_list, energy_bins, lo, hi):
+    return np.array([select_energy_band(s, energy_bins, lo, hi)
+                     for s in spectrum_list])
+
+
+def sum_diffraction(diff_list, detector_angles, angle_bins, *,
+                    pixel_scale=0.01741, pixel_offset=0):
     """Align spectra from different angles into 1 curve
 
     # TODO extend to take np.histogram style binning inputs on angle
 
     Parameters
     ----------
-    spectrum_list : iterable of 1D data
+    diff_list : iterable of 1D data
         Expected shape of elements is (384,)
 
     detector_angles : iterable
@@ -95,7 +100,7 @@ def sum_spectra(spectrum_list, detector_angles, angle_bins, *,
     out = np.zeros(len(angle_bins) - 1)
     norm = np.zeros(len(angle_bins) - 1)
 
-    for line, base_angle in zip(spectrum_list, detector_angles):
+    for line, base_angle in zip(diff_list, detector_angles):
         line_angles = (base_angle -
                        (np.arange(384) - 192) * pixel_scale +
                        pixel_offset)
