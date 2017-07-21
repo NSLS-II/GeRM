@@ -36,13 +36,15 @@ simulated_exposure = 10
 # ([S] / [event]) * ([tick] / [s]) = [tick] / [event]
 tick_gap = int((simulated_exposure / N) / (40 * 10e-9))
 
-n_chips = 4
-n_chans = 2
+n_chips = 12
+n_chans = 32
 
 
-def simulate_line(n):
+def simulate_line(n, c):
+    c = c.astype(float)
     return np.clip(
-        (2**6 * np.random.randn(n)) + 2**11,
+        (0.5 + 0.4 * np.sin((2*np.pi * 3 / (12*32)) * c)) *
+        ((2**7 * np.random.randn(n)) + 2**11),
         0, 2**12 - 1).astype(np.uint64)
 
 
@@ -51,26 +53,20 @@ def simulate_random(n):
 
 
 def make_sim_payload(num, n_chips, n_chans, tick_gap, ts_offset):
-    # simulate 4 active chips
-    # chip_id = np.random.randint(4, size=num, dtype=np.uint64) << (27+32)
-    chip_id = ((np.arange(num, dtype=np.uint64) //
-                n_chips) %
-               n_chips) << (27)
-    # simulate 4 active channels per chip
-    chan_id = ((np.arange(num, dtype=np.uint64) %
-                n_chips) %
-               n_chans) << (22)
-    # chan_id = np.random.randint(4, size=num, dtype=np.uint64) << (22+32)
+    pix_id = np.clip((50 * np.random.randn(num) + 192),
+                     0, 383).astype(np.uint64)
+    chip_id = pix_id // n_chans
+    chan_id = pix_id % n_chans
     # fine timestamp
     td = np.random.randint(2**10, size=num, dtype=np.uint64) << (12)
     # energy
-    pd = simulate_line(num)
+    pd = simulate_line(num, chip_id*32 + chan_id)
     # coarse timestamp
     ts = np.mod((np.cumsum(
         np.random.poisson(tick_gap, size=num).astype(np.uint64)) +
                  ts_offset),
                 2**31) << 32
-    payload = chip_id + chan_id + td + pd + ts
+    payload = (chip_id << 27) + (chan_id << 22) + td + pd + ts
     return payload, ts[-1]
 
 
