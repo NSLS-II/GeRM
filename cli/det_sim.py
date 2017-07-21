@@ -98,7 +98,8 @@ def recv_and_process():
             yield from publisher.send_multipart([b'data', payload])
 
         yield from publisher.send_multipart([b'meta',
-                                             np.uint32(state[FRAMENUMREG])])
+                                             np.array([state[FRAMENUMREG], 0],
+                                                      dtype=np.uint32)])
         return np.sum(num_per_msg, dtype=np.intp)
 
     while True:
