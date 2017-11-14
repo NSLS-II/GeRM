@@ -19,6 +19,8 @@ reg.register_handler('GeRM', GeRMHandler)
 mds = MDS({'directory': '/tmp/mds.sqlite', 'timezone': 'US/Eastern'})
 
 db = Broker(mds, reg=reg)
+
+
 RE = bs.RunEngine()
 RE.subscribe(db.insert)
 
