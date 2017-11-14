@@ -10,8 +10,6 @@ from pygerm.handler import GeRMHandler
 import numpy as np
 import pandas as pd
 from lmfit import Model
-import os
-from pathlib import Path
 
 
 # generic configuration, is already on the beamline
