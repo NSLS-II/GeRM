@@ -1,8 +1,7 @@
-from portable_fs.sqlite.fs import FileStore
-from portable_mds.sqlite.mds import MDS
+from databroker.assets.sqlite import Registry
+from databroker.headersource.sqlite import MDS
 from databroker import Broker
 import bluesky as bs
-import bluesky.plans as bp
 
 
 from pygerm.ophyd import GeRM
@@ -10,31 +9,36 @@ from pygerm.handler import GeRMHandler
 
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
+from lmfit import Model
+
 
 # generic configuration, is already on the beamline
-fs = FileStore({'dbpath': '/tmp/fs.sqlite'})
-fs.register_handler('GeRM', GeRMHandler)
+reg = Registry({'dbpath': '/tmp/fs.sqlite'})
+reg.register_handler('GeRM', GeRMHandler)
 
 mds = MDS({'directory': '/tmp/mds.sqlite', 'timezone': 'US/Eastern'})
 
-db = Broker(mds, fs=fs)
+db = Broker(mds, reg=reg)
+
+
 RE = bs.RunEngine()
-RE.subscribe('all', db.insert)
+RE.subscribe(db.insert)
 
 
 # create the GeRM object
-germ = GeRM('XF:28IDC-ES:1{Det:GeRM1}', name='germ', read_attrs=['filepath', 'last_file',
-                                             'chip', 'chan',
-                                             'td', 'pd', 'ts', 'count'],
+germ = GeRM('XF:28IDC-ES:1{Det:GeRM1}', name='germ',
+            read_attrs=['filepath', 'last_file',
+                        'chip', 'chan',
+                        'td', 'pd', 'ts', 'count'],
             configuration_attrs=['frametime'])
 
 
 # gaussian fit
-from lmfit import Model
+
 def gaussian(x, area, center, sigma):
     """standard gaussian function"""
     return area/(np.sqrt(2*np.pi)*sigma)*np.exp(-(x-center)**2/(2*sigma**2))
+
 
 def linear(x, a, b):
     return a*x+b
@@ -44,7 +48,7 @@ def fit_all_channels(data):
     gauss_mod1 = Model(gaussian, prefix='g1_')
     gauss_mod2 = Model(gaussian, prefix='g2_')
     gauss_mod3 = Model(gaussian, prefix='g3_')
-    
+
     gauss_mod = gauss_mod1+gauss_mod2+gauss_mod3
 
     g1_cen_list = []
@@ -70,23 +74,25 @@ def fit_all_channels(data):
 
 def get_calibration_value(cen_data, y):
     """Linear regression to calculate calibration based on bin center and energy value.
-    
+
     Parameters
     ----------
-    cen_data : 
+    cen_data :
         2D array with shape [number of data, number of x]
-    
+
     Output
     ------
     2d array:
-        shape [2, number of data], First data is slope and the second is intercept.    
+        shape [2, number of data], First data is slope and
+        the second is intercept.
     """
     from scipy.stats import linregress
-    cal_val = np.zeros([2, cen_data.shape[1]])  # shape is [number of channels, 2]
+    # shape is [number of channels, 2]
+    cal_val = np.zeros([2, cen_data.shape[1]])
     for i in range(cen_data.shape[1]):
         out = linregress(cen_data[:, i], y)
         cal_val[0, i] = out[0]
-        cal_val[1, i] = out[1] 
+        cal_val[1, i] = out[1]
     return cal_val
 
 
@@ -123,8 +129,8 @@ def make_mars_heatmap(h):
     return line
 
 
-
-def make_mars_heatmap_after_correction(h, corr_mat=None, minv=0, maxv=70, bin_num=2000):
+def make_mars_heatmap_after_correction(h, corr_mat=None,
+                                       minv=0, maxv=70, bin_num=2000):
     '''Make a spectrum khymography
 
     '''
@@ -140,14 +146,14 @@ def make_mars_heatmap_after_correction(h, corr_mat=None, minv=0, maxv=70, bin_nu
             i = int(chip*32+chan)
             eng_arr = gpd*corr_mat[0, i] + corr_mat[1, i]
             line[:, i] += np.histogram(eng_arr, bins=bin_edges)[0]
-            #line[:, i] += np.bincount(gpd, minlength=bins)
+            # line[:, i] += np.bincount(gpd, minlength=bins)
     return line, bin_edges
-import os
-from pathlib import Path
 
-_cal_file = Path(os.path.realpath(__file__)).parent / 'calibration_martix.txt'
-cal_val = np.loadtxt(str(_cal_file))
+
+# _cal_file = Path(os.path.realpath(__file__)).parent / 'calibration_martix.txt'
+# cal_val = np.loadtxt(str(_cal_file))
 
 # How to take a count
 # http://nsls-ii.github.io/bluesky/plans_intro.html
+# import bluesky.plans as bp
 # RE(bp.count([germ]))
