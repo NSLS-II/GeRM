@@ -2,10 +2,7 @@ from filestore import HandlerBase
 import h5py
 import numpy as np
 
-from .zmq import parsed_event_payload, DATA_TYPES
-
-# build a lookup table of the data types listed in zmq.py
-DATA_TYPEMAP = {name: num for num, name in enumerate(list(DATA_TYPES))}
+from .zmq import parsed_event_payload, DATA_TYPEMAP
 
 
 class GeRMHandler(HandlerBase):
@@ -35,3 +32,4 @@ class BinaryGeRMHandler(HandlerBase):
 
     def close(self):
         self._file.close()
+

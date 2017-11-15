@@ -2,6 +2,19 @@ import numpy as np
 import datetime
 from collections import OrderedDict
 
+def payload2germ(chip, chan, td, pd, ts):
+    '''
+        Change the payload of data to a GeRM Binary.
+        TODO : copy and paste docs here
+    '''
+    # uses numpy broadcasting
+    data = np.zeros(len(chip), dtype=np.uint64)
+    data = data | (chip << 27)
+    data = data | (chan << 22)
+    data = data | (td << 12)
+    data = data | pd
+    data = data | ts << 32
+    return data
 
 def parse_event_payload(data):
     '''Split up the raw data coming over the socket.
@@ -38,6 +51,8 @@ DATA_TYPES = OrderedDict((('chip', 8),
                           ('energy', 16),
                           ('timestamp_coarse', 32)))
 
+# build a lookup table of the data types listed in zmq.py
+DATA_TYPEMAP = {name: num for num, name in enumerate(list(DATA_TYPES))}
 
 class ZClient(object):
     '''Base class for talking to the ZMQ server which runs the GeRM
