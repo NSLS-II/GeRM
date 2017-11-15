@@ -25,6 +25,8 @@ class BinaryGeRMHandler(HandlerBase):
     def __init__(self, fpath):
         # TODO : don't save the raw data (here for debugging)
         self.raw_data = np.fromfile(fpath, count=self.dlen, dtype=np.uint64)
+        # remove first and last bit
+        self.raw_data = self.raw_data[1:-1]
         self.data = parsed_event_payload(self.raw_data)
 
     def __call__(self, column):
