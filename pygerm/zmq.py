@@ -2,20 +2,6 @@ import numpy as np
 import datetime
 from collections import OrderedDict
 
-def payload2germ(chip, chan, td, pd, ts):
-    '''
-        Change the payload of data to a GeRM Binary.
-        TODO : copy and paste docs here
-    '''
-    # uses numpy broadcasting
-    data = np.zeros(len(chip), dtype=np.uint64)
-    data = data | (chip << 27)
-    data = data | (chan << 22)
-    data = data | (td << 12)
-    data = data | pd
-    data = data | ts << 32
-    return data
-
 def parse_event_payload(data):
     '''Split up the raw data coming over the socket.
 
