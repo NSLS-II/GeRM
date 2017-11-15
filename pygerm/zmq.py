@@ -38,6 +38,9 @@ DATA_TYPES = OrderedDict((('chip', 8),
                           ('energy', 16),
                           ('timestamp_coarse', 32)))
 
+# build a lookup table of the data types listed in zmq.py
+DATA_TYPEMAP = {name: num for num, name in enumerate(list(DATA_TYPES))}
+
 
 class ZClient(object):
     '''Base class for talking to the ZMQ server which runs the GeRM
