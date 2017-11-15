@@ -32,4 +32,3 @@ class BinaryGeRMHandler(HandlerBase):
 
     def close(self):
         self._file.close()
-
