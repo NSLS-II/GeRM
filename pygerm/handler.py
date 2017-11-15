@@ -1,4 +1,4 @@
-from filestore import HandlerBase
+from databroker.assets.handlers_base import HandlerBase
 import h5py
 import numpy as np
 
