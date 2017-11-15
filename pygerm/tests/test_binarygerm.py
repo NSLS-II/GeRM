@@ -1,9 +1,7 @@
-import os
-import h5py
 import numpy as np
 import tempfile
 
-from pygerm.zmq import parse_event_payload, DATA_TYPEMAP
+from pygerm.zmq import parse_event_payload
 from pygerm.handler import BinaryGeRMHandler
 
 '''
@@ -11,7 +9,6 @@ numpy issue with anding np.uint64 see here:
     https://github.com/numpy/numpy/issues/2955
 use np.uint64(0x111) typecasting for every unit wise operation
 '''
-
 
 
 def payload2germ(chip, chan, td, pd, ts):
@@ -27,18 +24,12 @@ def payload2germ(chip, chan, td, pd, ts):
     data = data | ts << 32
     return data
 
-# two steps:
-'''
-    1. generate the internal data
-    2. generate the whole packet
-
-    TODO : endianness check!
-'''
 
 def generate_germ_data():
     ''' generate random germ data'''
     # number of elements
     N = 3000
+
     def generate_data(N):
         return np.random.randint(low=0, high=1000, size=N, dtype='uint32')
 
@@ -51,6 +42,7 @@ def generate_germ_data():
 
     return germ
 
+
 def generate_germ_packet():
     germ_data = generate_germ_data()
 
@@ -61,7 +53,6 @@ def generate_germ_packet():
     germ_binary[-1] = 0xdecafbad
 
     return germ_binary
-
 
 
 def test_binary_germ():
