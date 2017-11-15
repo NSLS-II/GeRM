@@ -75,8 +75,8 @@ def generate_germ_packet():
 
 
 def test_binary_germ():
-    ''' test interchangeability from old hdf5 file format to germ file
-    format.'''
+    ''' Test the binary format comes out as expected.
+    '''
     # make the tempfile
     fpath = tempfile.mktemp()
 
