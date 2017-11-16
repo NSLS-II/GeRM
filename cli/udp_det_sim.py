@@ -39,6 +39,7 @@ class ListenAndSend(DatagramProtocol):
     def send(self, data):
         if not self.armed:
             return
+        print(len(data) // 4)
         self.transport.sendto(data, self.target_addr)
 
 
@@ -62,9 +63,9 @@ loop = zmq.asyncio.ZMQEventLoop()
 asyncio.set_event_loop(loop)
 
 # average number of events per msg
-N = 50000
+N = 5000
 # number of messages
-n_msgs = 50
+n_msgs = 5
 # average total exposure
 simulated_exposure = 10
 # expected ticks between events
@@ -124,16 +125,50 @@ async def recv_and_process():
         num_per_msg = np.random.poisson(N, size=n_msgs)
         ts_offset = 0
         udp_packet_count = 0
+        tail = []
         for num in num_per_msg:
             payload, ts_offset = make_sim_payload(num,
                                                   n_chips, n_chans,
                                                   tick_gap,
                                                   ts_offset)
             await publisher.send_multipart([b'data', payload])
-            for j in range(0, len(payload), 1023):
-                udp.send(b''.join((bytes(udp_packet_count),
-                                   bytes(payload[(j*1023):(j+1)*1023]))))
+            if udp_packet_count == 0:
+                # special case packet 0
+                tail = payload
+                head, tail = tail[:510], tail[510:]
+                header = array.array('I',
+                                     [udp_packet_count,
+                                      0xfeedface,
+                                      state[FRAMENUMREG],
+                                      0])
+                udp.send(b''.join((bytes(header),
+                                   bytes(head))))
                 udp_packet_count += 1
+            else:
+                first_head = 511 - len(tail)
+                head = (tail, payload[:first_head])
+                tail = payload[first_head:]
+                header = array.array('I',
+                                     [udp_packet_count, 0])
+                udp.send(b''.join((bytes(header),
+                                   bytes(head[0]),
+                                   bytes(head[1]))))
+                udp_packet_count += 1
+
+            while len(tail) > 511:
+                head, tail = tail[:511], tail[511:]
+                header = array.array('I',
+                                     [udp_packet_count, 0])
+                udp.send(b''.join((bytes(header),
+                                   bytes(head))))
+                udp_packet_count += 1
+        header = array.array('I',
+                             [udp_packet_count, 0])
+        footer = array.array('I',
+                             [0, 0xdecafbad])
+        udp.send(b''.join((bytes(header),
+                           bytes(tail),
+                           bytes(footer))))
 
         await publisher.send_multipart([b'meta',
                                         np.array([state[FRAMENUMREG], 0],
