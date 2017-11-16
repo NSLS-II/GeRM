@@ -1,12 +1,12 @@
 import asyncio
 from asyncio import DatagramProtocol, get_event_loop
-import array
 import zmq
 import zmq.asyncio
 import numpy as np
 from enum import Enum
 from collections import defaultdict
 import time
+import struct
 
 
 class ListenAndSend(DatagramProtocol):
@@ -21,10 +21,10 @@ class ListenAndSend(DatagramProtocol):
     def datagram_received(self, data, addr):
         print(data, addr)
         try:
-            sig, _, enable = array.array('L', data)
+            sig, _, enable = struct.unpack('III', data)
         except ValueError:
             return
-
+        print(sig)
         if sig != 0xdeadbeef:
             return
 
@@ -136,39 +136,33 @@ async def recv_and_process():
                 # special case packet 0
                 tail = payload
                 head, tail = tail[:510], tail[510:]
-                header = array.array('I',
-                                     [udp_packet_count,
-                                      0xfeedface,
-                                      state[FRAMENUMREG],
-                                      0])
-                udp.send(b''.join((bytes(header),
+                header = struct.pack('IIIxxxx',
+                                     udp_packet_count,
+                                     0xfeedface,
+                                     state[FRAMENUMREG])
+                udp.send(b''.join((header,
                                    bytes(head))))
                 udp_packet_count += 1
             else:
                 first_head = 511 - len(tail)
                 head = (tail, payload[:first_head])
                 tail = payload[first_head:]
-                header = array.array('I',
-                                     [udp_packet_count, 0])
-                udp.send(b''.join((bytes(header),
+                header = struct.pack('Ixxxx', udp_packet_count)
+                udp.send(b''.join((header,
                                    bytes(head[0]),
                                    bytes(head[1]))))
                 udp_packet_count += 1
 
             while len(tail) > 511:
                 head, tail = tail[:511], tail[511:]
-                header = array.array('I',
-                                     [udp_packet_count, 0])
-                udp.send(b''.join((bytes(header),
-                                   bytes(head))))
+                header = struct.pack('Ixxxx', udp_packet_count)
+                udp.send(b''.join((header, bytes(head))))
                 udp_packet_count += 1
-        header = array.array('I',
-                             [udp_packet_count, 0])
-        footer = array.array('I',
-                             [0, 0xdecafbad])
-        udp.send(b''.join((bytes(header),
+        header = struct.pack('Ixxxx', udp_packet_count)
+        footer = struct.pack('II', 0, 0xdecafbad)
+        udp.send(b''.join((header,
                            bytes(tail),
-                           bytes(footer))))
+                           footer)))
 
         await publisher.send_multipart([b'meta',
                                         np.array([state[FRAMENUMREG], 0],
