@@ -422,7 +422,7 @@ int main(void)
     struct timeval tvBegin, tvEnd;
     void *context = zmq_ctx_new();
     void *responder = zmq_socket (context, ZMQ_REP);
-    int zmqrc = zmq_bind(responder, "tcp://*:5555");
+    int zmqrc = zmq_bind(responder, "tcp://*:5557");
     //assert (zmqrc == 0);
     char filename[64] = {0};
     int filenamelen, framenum;

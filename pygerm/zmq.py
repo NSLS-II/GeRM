@@ -45,6 +45,7 @@ class ZClient(object):
     '''
     ZMQ_DATA_PORT = "5556"
     ZMQ_CNTL_PORT = "5555"
+    ZMQ_UDP_CNTL_PORT = "5557"
     TOPIC_DATA = b"data"
     TOPIC_META = b"meta"
 
