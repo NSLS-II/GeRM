@@ -18,8 +18,9 @@ class ChannelGeRMAcquireUDP(ca.ChannelData):
         self.uclient = uclient
         self.parent = parent
 
-    async def set_dbr_data(self, data, data_type, metadata):
-        await super().set_dbr_data(data, data_type, metadata)
+    async def write_from_dbr(self, data, data_type, metadata):
+        await super().write_from_dbr(data, data_type, metadata)
+        await self.trigger_frame()
 
     async def trigger_frame(self):
         zc = self.zclient
@@ -52,8 +53,8 @@ class ChannelGeRMAcquire(ca.ChannelData):
         self.zclient = zclient
         self.parent = parent
 
-    async def set_dbr_data(self, data, data_type, metadata):
-        await super().set_dbr_data(data, data_type, metadata)
+    async def write_from_dbr(self, data, data_type, metadata):
+        await super().write_from_dbr(data, data_type, metadata)
         if data:
             start_time = time.time()
             fr_num, ev_count, data, overfill = (
@@ -61,11 +62,11 @@ class ChannelGeRMAcquire(ca.ChannelData):
             delta_time = time.time() - start_time
             print(f'read frame: {fr_num} with {ev_count} '
                   f'events in {delta_time}s ({ev_count / delta_time} ev/s )')
-            await self.parent.count_channel.set_dbr_data(
+            await self.parent.count_channel.write_from_dbr(
                 ev_count, ca.DBR_INT.DBR_ID, None)
-            await self.parent.overfill_channel.set_dbr_data(
+            await self.parent.overfill_channel.write_from_dbr(
                 overfill, ca.DBR_INT.DBR_ID, None)
-            await self.parent.last_frame_channel.set_dbr_data(
+            await self.parent.last_frame_channel.write_from_dbr(
                 fr_num, ca.DBR_INT.DBR_ID, None)
             try:
                 start_time = time.time()
@@ -87,7 +88,7 @@ class ChannelGeRMAcquire(ca.ChannelData):
                             for k, d in zip(DATA_TYPES, payload):
                                 dsets[k][offset:offset+bunch_len] = d
                             offset += bunch_len
-                    await self.parent.last_file_channel.set_dbr_data(
+                    await self.parent.last_file_channel.write_from_dbr(
                         str(fname.name), ca.DBR_STRING.DBR_ID, None)
                     if self.parent._fs:
                         fs = self.parent._fs
@@ -101,7 +102,7 @@ class ChannelGeRMAcquire(ca.ChannelData):
                             dset_uid = str(uuid.uuid4())
                             fs.insert_datum(res, dset_uid, {'column': dset})
 
-                            await chan.set_dbr_data(
+                            await chan.write_from_dbr(
                                 dset_uid, ca.DBR_STRING.DBR_ID, None)
                 delta_time = time.time() - start_time
                 print(f'wrote frame: {fr_num} with {ev_count} '
@@ -113,7 +114,7 @@ class ChannelGeRMAcquire(ca.ChannelData):
                 print('failed')
                 print(e)
 
-            await super().set_dbr_data(0, data_type, None)
+            await super().write_from_dbr(0, data_type, None)
 
 
 class ChannelGeRMFrameTime(ca.ChannelDouble):
@@ -128,7 +129,7 @@ class ChannelGeRMFrameTime(ca.ChannelDouble):
         super().__init__(units=units, **kwargs)
         self.zclient = zclient
 
-    async def set_dbr_data(self, data, data_type, metadata):
+    async def write_from_dbr(self, data, data_type, metadata):
         data, = data
 
         if data > self.MAXT or data < 0:
@@ -136,7 +137,7 @@ class ChannelGeRMFrameTime(ca.ChannelDouble):
             return
         counts = data / self.RESOLUTION
         await self.zclient.write(0xd4, np.int32(counts))
-        ret = await super().set_dbr_data(data, data_type, metadata)
+        ret = await super().write_from_dbr(data, data_type, metadata)
         return ret
 
     async def get_dbr_data(self, type_):
