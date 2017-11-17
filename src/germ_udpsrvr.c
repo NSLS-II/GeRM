@@ -23,7 +23,7 @@
 
 
 //event data buffer for a frame
-uint16_t evtdata[5000000000];
+uint16_t evtdata[1000000000];
 //uint32_t evtdata[20000000];
 
 const char *GIGE_ERROR_STRING[] = { "",
