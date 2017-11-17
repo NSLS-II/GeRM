@@ -33,7 +33,8 @@ class ListenAndSend(DatagramProtocol):
         else:
             self.target_addr = None
 
-        self.transport.sendto(data, addr)
+        # echo back the correct thing
+        self.transport.sendto(struct.pack('!xxxxI', 0x4f6b6179), addr)
 
     def send(self, data):
         if not self.armed:
