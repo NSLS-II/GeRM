@@ -424,7 +424,7 @@ int main(void)
     void *responder = zmq_socket (context, ZMQ_REP);
     int zmqrc = zmq_bind(responder, "tcp://*:5557");
     //assert (zmqrc == 0);
-    char filename[64] = {0};
+    char filename[128] = {0};
     int filenamelen, framenum;
     char framestr[3];
     char eofmsg[64], fwmsg[64] = {0};
