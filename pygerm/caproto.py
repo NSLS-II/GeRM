@@ -189,8 +189,10 @@ class GeRMIOCZMQData(GeRMIOCBase):
 
 class GeRMIOCUDPData(GeRMIOCBase):
     def __init__(self, zync_url, udp_ctrl_url, fs):
-        self.zclient = ZClientCurioBase(zync_url, zmq=zmq)
-        self.udp_client = UClientCurio(udp_ctrl_url, zmq=zmq)
+        context = zmq.Context()
+
+        self.zclient = ZClientCurioBase(zync_url, zmq=zmq, context=context)
+        self.udp_client = UClientCurio(udp_ctrl_url, zmq=zmq, context=context)
 
         super().__init__(fs=fs)
 

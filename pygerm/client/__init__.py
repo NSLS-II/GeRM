@@ -50,8 +50,10 @@ class ZClient:
     TOPIC_DATA = b"data"
     TOPIC_META = b"meta"
 
-    def __init__(self, url, *, zmq):
-        self.__context = zmq.Context()
+    def __init__(self, url, *, zmq, context=None):
+        if context is None:
+            context = zmq.Context()
+        self.__context = context
         self._data_sock_class = zmq.SUB
         self.data_sock = self.__context.socket(self._data_sock_class)
         self.ctrl_sock = self.__context.socket(zmq.REQ)
@@ -84,21 +86,15 @@ class ZClient:
         print('c')
 
 
-class ZClientUDP(ZClient):
-    ZMQ_UDP_CNTL_PORT = "5557"
-
-    def __init__(self, url, *, zmq):
-        super().__init__(url, zmq=zmq)
-        self.udp_ctrl_sock.connect("{}:{}".format(url, self.ZMQ_UDP_CNTL_PORT))
-
-
 class UClient:
     '''Base class for talking to the udp collector
 
     '''
     ZMQ_CNTL_PORT = "5557"
 
-    def __init__(self, url, *, zmq):
-        self.__context = zmq.Context()
+    def __init__(self, url, *, zmq, context=None):
+        if context is None:
+            context = zmq.Context()
+        self.__context = context
         self.ctrl_sock = self.__context.socket(zmq.REQ)
         self.ctrl_sock.connect("{}:{}".format(url, self.ZMQ_CNTL_PORT))
