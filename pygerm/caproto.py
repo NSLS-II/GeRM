@@ -7,7 +7,42 @@ import time
 import curio
 import curio.zmq as zmq
 from .client import DATA_TYPES
-from .client.curio_zmq import ZClientCaproto
+from .client.curio_zmq import ZClientCurio, ZClientCurioBase, UClientCurio
+from . import TRIGGER_SETUP_SEQ, START_DAQ, STOP_DAQ
+
+
+class ChannelGeRMAcquireUDP(ca.ChannelData):
+    def __init__(self, *, zclient, uclient, parent, **kwargs):
+        super().__init__(**kwargs)
+        self.zclient = zclient
+        self.uclient = uclient
+        self.parent = parent
+
+    async def set_dbr_data(self, data, data_type, metadata):
+        await super().set_dbr_data(data, data_type, metadata)
+
+    async def trigger_frame(self):
+        zc = self.zclient
+        uc = self.uclient
+
+        for (addr, val) in TRIGGER_SETUP_SEQ:
+            if addr is None:
+                await curio.sleep(val)
+            else:
+                await zc.write(addr, val)
+
+        await uc.ctrl_sock.send(b'/tmp/test')
+        await uc.ctrl_sock.recv()
+        await zc.write(*START_DAQ)
+        await uc.ctrl_sock.send(b'ack')
+        await uc.ctrl_sock.recv()
+        await uc.ctrl_sock.send(b'ack')
+        await uc.ctrl_sock.recv()
+        await zc.write(*STOP_DAQ)
+
+        fr_num, ev_count, overfill = 0, 0, 0
+
+        return fr_num, ev_count, overfill
 
 
 class ChannelGeRMAcquire(ca.ChannelData):
@@ -112,14 +147,12 @@ class ChannelGeRMFrameTime(ca.ChannelDouble):
         return ret
 
 
-class GeRMIOC:
-    def __init__(self, zmq_url, fs):
+class GeRMIOCBase:
+    def __init__(self, *, fs):
         self._fs = fs
-        self.zclient = ZClientCaproto(zmq_url, zmq=zmq)
 
-        self.acquire_channel = ChannelGeRMAcquire(
-            value=0, zclient=self.zclient, parent=self)
-
+        # this assumes a sub-class creates self.zclient and then calls
+        # super()
         self.frametime_channel = ChannelGeRMFrameTime(
             value=1, zclient=self.zclient)
 
@@ -142,6 +175,28 @@ class GeRMIOC:
             value='null', string_encoding='latin-1')
         self.uid_ts_channel = ca.ChannelString(
             value='null', string_encoding='latin-1')
+
+
+class GeRMIOCZMQData(GeRMIOCBase):
+    def __init__(self, zync_url, fs):
+        self.zclient = ZClientCurio(zync_url, zmq=zmq)
+
+        super().__init__(fs=fs)
+
+        self.acquire_channel = ChannelGeRMAcquire(
+            value=0, zclient=self.zclient, parent=self)
+
+
+class GeRMIOCUDPData(GeRMIOCBase):
+    def __init__(self, zync_url, udp_ctrl_url, fs):
+        self.zclient = ZClientCurioBase(zync_url, zmq=zmq)
+        self.udp_client = UClientCurio(udp_ctrl_url, zmq=zmq)
+
+        super().__init__(fs=fs)
+
+        self.acquire_channel = ChannelGeRMAcquireUDP(
+            value=0, zclient=self.zclient, uclient=self.udp_client,
+            parent=self)
 
 
 async def runner(germ):

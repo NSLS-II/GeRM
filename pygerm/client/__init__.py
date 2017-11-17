@@ -42,7 +42,7 @@ DATA_TYPEMAP = {name: num for num, name in enumerate(list(DATA_TYPES))}
 
 
 class ZClient:
-    '''Base class for talking to the Zync chip + udp collector
+    '''Base class for talking to the Zync chip
 
     '''
     ZMQ_DATA_PORT = "5556"
@@ -84,9 +84,21 @@ class ZClient:
         print('c')
 
 
-class ZClientUDP(ZClientUDP):
+class ZClientUDP(ZClient):
     ZMQ_UDP_CNTL_PORT = "5557"
 
     def __init__(self, url, *, zmq):
         super().__init__(url, zmq=zmq)
         self.udp_ctrl_sock.connect("{}:{}".format(url, self.ZMQ_UDP_CNTL_PORT))
+
+
+class UClient:
+    '''Base class for talking to the udp collector
+
+    '''
+    ZMQ_CNTL_PORT = "5557"
+
+    def __init__(self, url, *, zmq):
+        self.__context = zmq.Context()
+        self.ctrl_sock = self.__context.socket(zmq.REQ)
+        self.ctrl_sock.connect("{}:{}".format(url, self.ZMQ_CNTL_PORT))

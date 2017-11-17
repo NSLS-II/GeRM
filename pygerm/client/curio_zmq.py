@@ -1,18 +1,12 @@
-from . import ZClient
+from . import ZClient, UClient
 from .. import TRIGGER_SETUP_SEQ, START_DAQ, STOP_DAQ
 import numpy as np
 import curio
 
 
-class ZClientCaprotoBase(ZClient):
+class ZClientCurioBase(ZClient):
     def __init__(self, *args, max_events=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.acq_done = curio.Condition()
-        self.collecting = False
-        self.data_buffer = []
-        self.last_frame = None
-        self.overfill = 0
-        self.max_events = max_events
         self.cmd_lock = curio.Lock()
 
     async def __cntrl_recv(self):
@@ -22,10 +16,6 @@ class ZClientCaprotoBase(ZClient):
     async def __cntrl_send(self, payload):
         payload = np.asarray(payload, dtype=np.uint32)
         return (await self.ctrl_sock.send(payload))
-
-    async def __udp_ctrl(self, payload):
-        await self.udp_ctrl_sock.send(payload.encode())
-        return (self.udp_ctrl_sock.recv())
 
     async def read(self, addr):
         async with self.cmd_lock:
@@ -41,11 +31,29 @@ class ZClientCaprotoBase(ZClient):
             ret = await self.__cntrl_recv()
             return ret
 
-    async def set_filename(self, fname):
-        return (await self.__udp_ctrl(fname))
+
+class UClientCurio(UClient):
+    async def __cntrl_recv(self):
+        return (await self.ctrl_sock.recv())
+
+    async def __cntrl_send(self, payload):
+        return (await self.ctrl_sock.send(payload.encode()))
+
+    async def write(self, payload):
+        await self.__cntrl_send(payload)
+        return (await self.__cntrl_recv())
 
 
-class ZClientCaproto(ZClientCaprotoBase):
+class ZClientCurio(ZClientCurioBase):
+    def __init__(self, *args, max_events=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.acq_done = curio.Condition()
+        self.collecting = False
+        self.data_buffer = []
+        self.last_frame = None
+        self.overfill = 0
+        self.max_events = max_events
+
     async def read_forever(self):
         while True:
             # just read from the zmq socket
