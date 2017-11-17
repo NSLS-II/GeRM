@@ -40,7 +40,8 @@ class ListenAndSend(DatagramProtocol):
         if not self.armed:
             return
         print(len(data) // 4)
-        self.transport.sendto(data, self.target_addr)
+        self.transport.sendto(data, (self.target_addr[0], 0x7D03))
+
 
 
 class CMDS(Enum):
@@ -117,7 +118,11 @@ async def recv_and_process():
     ts_offset = 0
 
     _, udp = await loop.create_datagram_endpoint(
-        ListenAndSend, local_addr=('localhost', 3751))
+        ListenAndSend, local_addr=('localhost', 0x7D00))
+
+    # this is not actually used (yet)
+    await loop.create_datagram_endpoint(
+        RegisterPort, local_addr=('localhost', 0x7D01))
 
     async def sim_data():
         nonlocal ts_offset
