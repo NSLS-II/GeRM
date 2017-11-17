@@ -43,6 +43,16 @@ class ListenAndSend(DatagramProtocol):
         self.transport.sendto(data, (self.target_addr[0], 0x7D03))
 
 
+class RegisterPort(DatagramProtocol):
+
+    def connection_made(self, transport):
+        self.transport = transport
+
+    def datagram_received(self, data, addr):
+        print('MATE', 0x7D01)
+        print(data, addr)
+        self.transport.send(data, addr)
+
 
 class CMDS(Enum):
     REG_READ = 0
