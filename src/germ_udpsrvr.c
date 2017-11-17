@@ -19,7 +19,7 @@
 #include <sys/time.h>
 #include <time.h>
 
-#include "../include/gige.h"
+#include "gige.h"
 
 
 //event data buffer for a frame
