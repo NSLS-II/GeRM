@@ -9,7 +9,8 @@
 #include <unistd.h>
 
 #define GIGE_KEY 0xdeadbeef
-#define GIGE_CLIENT_IP "10.0.143"
+// #define GIGE_CLIENT_IP "10.0.143"
+#define GIGE_CLIENT_IP "127.0.0"
 
 // where the 0xdeadbeef is sent to turn on udp packets
 #define GIGE_REGISTER_WRITE_TX_PORT 0x7D00

@@ -415,8 +415,8 @@ int main(void)
 {
     int rc = 0;
     uint32_t value;
-    gige_reg_t *reg = gige_reg_init(150, NULL);
-    gige_data_t *dat = gige_data_init(150, NULL);
+    gige_reg_t *reg = gige_reg_init(1, NULL);
+    gige_data_t *dat = gige_data_init(1, NULL);
     int i,checkval,chkerr=0;
     FILE *fp;
     struct timeval tvBegin, tvEnd;
