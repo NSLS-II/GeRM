@@ -11,10 +11,17 @@
 #define GIGE_KEY 0xdeadbeef
 #define GIGE_CLIENT_IP "10.0.143"
 
+// where the 0xdeadbeef is sent to turn on udp packets
 #define GIGE_REGISTER_WRITE_TX_PORT 0x7D00
+// not used (yet), reads register host
 #define GIGE_REGISTER_READ_TX_PORT  0x7D01
+// port that register request writes back to (bound in c)
+// could be random and extracted from the datagram sent on 0x7D00
 #define GIGE_REGISTER_RX_PORT       0x7D02
+// port that the udp packets write to (bound in c)
+// presumably this could be sent via one of the above ports?
 #define GIGE_DATA_RX_PORT           0x7D03
+
 
 #define SOF_MARKER_UPPER 0xfeed
 #define SOF_MARKER_LOWER 0xface
