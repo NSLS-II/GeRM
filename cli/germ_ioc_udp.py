@@ -1,7 +1,7 @@
 import curio.zmq as zmq
 from caproto.curio.server import Context, find_next_tcp_port
 from pygerm.caproto import GeRMIOCUDPData
-from portable_fs.sqlite.fs import FileStore
+from databroker.assets.sqlite import Registry
 import argparse
 
 prefix = 'XF:28IDC-ES:1{Det:GeRM1}'
@@ -39,7 +39,7 @@ if __name__ == '__main__':
     zync_ip = args.zync_host
     collector_ip = args.collector_host
 
-    fs = FileStore({'dbpath': '/tmp/fs.sqlite'})
+    fs = Registry({'dbpath': '/tmp/fs.sqlite'})
     ctx, germ = create_server(f'tcp://{zync_ip}', f'tcp://{collector_ip}', fs)
 
     async def runner():
