@@ -161,22 +161,22 @@ class GeRMIOCBase:
         self.filepath_channel = ca.ChannelString(
             value=b'/tmp/test', string_encoding='latin-1')
         self.last_file_channel = ca.ChannelString(
-            value='null', string_encoding='latin-1')
+            value=b'null', string_encoding='latin-1')
 
         self.count_channel = ca.ChannelInteger(value=0)
         self.overfill_channel = ca.ChannelInteger(value=0)
         self.last_frame_channel = ca.ChannelInteger(value=0)
 
         self.uid_chip_channel = ca.ChannelString(
-            value='null', string_encoding='latin-1')
+            value=b'null', string_encoding='latin-1')
         self.uid_chan_channel = ca.ChannelString(
-            value='null', string_encoding='latin-1')
+            value=b'null', string_encoding='latin-1')
         self.uid_td_channel = ca.ChannelString(
-            value='null', string_encoding='latin-1')
+            value=b'null', string_encoding='latin-1')
         self.uid_pd_channel = ca.ChannelString(
-            value='null', string_encoding='latin-1')
+            value=b'null', string_encoding='latin-1')
         self.uid_ts_channel = ca.ChannelString(
-            value='null', string_encoding='latin-1')
+            value=b'null', string_encoding='latin-1')
 
 
 class GeRMIOCZMQData(GeRMIOCBase):
