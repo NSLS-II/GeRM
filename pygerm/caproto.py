@@ -157,8 +157,9 @@ class GeRMIOCBase:
         self.frametime_channel = ChannelGeRMFrameTime(
             value=1, zclient=self.zclient)
 
-        self.filepath_channel = ca.ChannelChar(
-            value='/tmp', string_encoding='latin-1')
+        # limited length, but works!
+        self.filepath_channel = ca.ChannelString(
+            value=b'/tmp/test', string_encoding='latin-1')
         self.last_file_channel = ca.ChannelString(
             value='null', string_encoding='latin-1')
 
