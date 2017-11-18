@@ -483,6 +483,7 @@ int main(void)
       sprintf(framestr,"%03d",framenum);
       strcat(filename,framestr);
       strcat(filename,".bin");
+      filenamelen = strlen(filename);
       fp = fopen(filename, "w");
       gettimeofday(&tvBegin, NULL);
       printf("Saving File : %s\n",filename);
@@ -491,8 +492,8 @@ int main(void)
       printf("Wrote %4.2f MB to %s in %f sec\n", numwords*2/1e6, filename, (float)(time_elapsed(tvBegin, tvEnd)/1e6));
       fclose(fp);
       zmq_recv(responder, fwmsg, sizeof(fwmsg), 0);
-      printf("ZMQ msg: %s\n",fwmsg);
-      zmq_send(responder,"File Write Complete", 19, 0);
+      printf("ZMQ msg: %s\n", fwmsg);
+      zmq_send(responder,filename, filenamelen, 0);
 
       printf("\n");
 

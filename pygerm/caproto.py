@@ -32,15 +32,25 @@ class ChannelGeRMAcquireUDP(ca.ChannelData):
             else:
                 await zc.write(addr, val)
 
-        await uc.ctrl_sock.send(b'/tmp/test')
-        await uc.ctrl_sock.recv()
+        # expect this to come back as a length 1 list with
+        # a Bytes object in it
+        write_path, = self.parent.filepath_channel.value
+
+        await uc.ctrl_sock.send(write_path)
+        resp = await uc.ctrl_sock.recv()
+        if resp != b'Received Filename':
+            print("DANGER WILL ROBINSON")
+            return
+
         await zc.write(*START_DAQ)
         await uc.ctrl_sock.send(b'ack')
         await uc.ctrl_sock.recv()
         await uc.ctrl_sock.send(b'ack')
-        await uc.ctrl_sock.recv()
-        await zc.write(*STOP_DAQ)
+        written_file = await uc.ctrl_sock.recv()
+        await self.parent.last_file_channel.write_from_dbr(
+            [written_file], ca.ChannelType.STRING, None)
 
+        await zc.write(*STOP_DAQ)
         fr_num, ev_count, overfill = 0, 0, 0
 
         return fr_num, ev_count, overfill
