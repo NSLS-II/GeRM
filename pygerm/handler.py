@@ -24,7 +24,7 @@ class BinaryGeRMHandler(HandlerBase):
 
     def __init__(self, fpath):
         # TODO : don't save the raw data (here for debugging)
-        raw_data = np.fromfile(fpath, dtype=np.uint64)
+        raw_data = np.fromfile(fpath, dtype='>u8')
         # TODO : when simulated data comes in, verify this is correct
         # endianness and correct for it, don't just raise error
         first_word = raw_data[0] & np.uint64(0xffffffff00000000)
