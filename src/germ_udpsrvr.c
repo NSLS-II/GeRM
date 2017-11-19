@@ -386,7 +386,6 @@ uint gige_data_recv(gige_data_t *dat, uint16_t *data)
 
     if (packet_counter != cnt-1) {
         fprintf(stderr, "ERROR: Dropped a packet! Missed %i packets\n", packet_counter - cnt);
-        return 0;
     }
 
 
