@@ -62,6 +62,23 @@ class ChannelGeRMAcquireUDP(ca.ChannelData):
         await self.parent.count_channel.write_from_dbr(
             [ev_count], ca.ChannelType.INT, None)
 
+        fs = self.parent._fs
+        res = fs.register_resource('BinaryGeRM', '/',
+                                   written_file.decode(),
+                                   {})
+
+        for short in ('chip', 'chan', 'td', 'pd', 'ts'):
+            print(f'short: {short}')
+            chan_name = f'uid_{short}_channel'
+            print(f'chan_name: {chan_name}')
+            chan = getattr(self.parent, chan_name)
+            print(f'chan: {chan}')
+            dset_uid = str(uuid.uuid4())
+            dset_uid = fs.register_datum(res, {'column': short})
+
+            await chan.write_from_dbr(
+                dset_uid.encode(), ca.ChannelType.STRING, None)
+
         return fr_num, ev_count, overfill
 
 
