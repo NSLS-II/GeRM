@@ -469,6 +469,9 @@ int main(void)
       //printf("Numwords in Frame=%d\n",numwords);
       //printf("\n");
 
+      //save to disk
+      zmq_recv(responder, eofmsg, sizeof(eofmsg), 0);
+      printf("ZMQ msg: %s\n", eofmsg);
 
       //print frame number (2nd word in packet)
       framenum =  ntohs(evtdata[2]) << 16 | ntohs(evtdata[3]);
@@ -477,10 +480,11 @@ int main(void)
       printf("Events lost to Overflow: %" PRId64 "\n", numoverflows);
       //printf("EOF: %x\n",(ntohs(evtdata[numwords-2]) << 16 | ntohs(evtdata[numwords-1])));
 
-      //save to disk
-      zmq_recv(responder, eofmsg, sizeof(eofmsg), 0);
-      printf("ZMQ msg: %s\n",eofmsg);
-      zmq_send(responder,"EOF Received", 12, 0);
+      frame_md[0] = framenum;
+      frame_md[1] = numevents;
+      frame_md[2] = numoverflows;
+
+      zmq_send(responder, frame_md, sizeof(frame_md), 0);
       strcat(filename,"_");
       sprintf(framestr,"%03d",framenum);
       strcat(filename,framestr);

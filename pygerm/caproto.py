@@ -6,6 +6,7 @@ import uuid
 import time
 import curio
 import curio.zmq as zmq
+import struct
 from .client import DATA_TYPES
 from .client.curio_zmq import ZClientCurio, ZClientCurioBase, UClientCurio
 from . import TRIGGER_SETUP_SEQ, START_DAQ, STOP_DAQ
@@ -44,14 +45,22 @@ class ChannelGeRMAcquireUDP(ca.ChannelData):
 
         await zc.write(*START_DAQ)
         await uc.ctrl_sock.send(b'ack')
-        await uc.ctrl_sock.recv()
+        payload = await uc.ctrl_sock.recv()
+
         await uc.ctrl_sock.send(b'ack')
         written_file = await uc.ctrl_sock.recv()
         await self.parent.last_file_channel.write_from_dbr(
             [written_file], ca.ChannelType.STRING, None)
 
         await zc.write(*STOP_DAQ)
-        fr_num, ev_count, overfill = 0, 0, 0
+        fr_num, ev_count, overfill = struct.unpack('QQQ', payload)
+
+        await self.parent.last_frame_channel.write_from_dbr(
+            [fr_num], ca.ChannelType.INT, None)
+        await self.parent.overfill_channel.write_from_dbr(
+            [overfill], ca.ChannelType.INT, None)
+        await self.parent.count_channel.write_from_dbr(
+            [ev_count], ca.ChannelType.INT, None)
 
         return fr_num, ev_count, overfill
 
