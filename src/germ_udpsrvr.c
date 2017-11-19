@@ -18,6 +18,7 @@
 #include <ifaddrs.h>
 #include <sys/time.h>
 #include <time.h>
+#include <inttypes.h>
 
 #include "gige.h"
 
@@ -315,16 +316,17 @@ long int time_elapsed(struct timeval time_i, struct timeval time_f)
 
 
 
-int gige_data_recv(gige_data_t *dat, uint16_t *data)
+uint gige_data_recv(gige_data_t *dat, uint16_t *data)
 {
     struct sockaddr_in cliaddr;
     struct timeval tvBegin, tvEnd;
     socklen_t len;
     uint16_t mesg[4096];
-    int n = 0, total_sz = 0, total_data = 0;
+    ssize_t n = 0;
+    uint total_sz = 0, total_data = 0;
     uint32_t first_packetnum, packet_counter;
-    int src = 0, dest =0 , cnt = 0, end_of_frame = 0, start_of_frame = 0;
-    int i = 0;
+    uint src = 0, dest =0 , cnt = 0, end_of_frame = 0, start_of_frame = 0;
+    uint i = 0;
 
     while ( ! end_of_frame) {
         n = recvfrom(dat->sock, mesg, sizeof(mesg), 0,
@@ -428,6 +430,7 @@ int main(void)
     int filenamelen, framenum;
     char framestr[3];
     char eofmsg[64], fwmsg[64] = {0};
+    uint64_t frame_md[3] = {0};
 
 
     /*while (1) {
@@ -460,7 +463,9 @@ int main(void)
       printf("Ready for Event Data...\n");
 
       //get the data from a frame
-      int numwords = gige_data_recv(dat,evtdata);
+      uint64_t numwords = gige_data_recv(dat, evtdata);
+      uint64_t numevents = (numwords-8)/4;
+      uint64_t numoverflows = (ntohs(evtdata[numwords-4]) << 16 | ntohs(evtdata[numwords-3]));
       //printf("Numwords in Frame=%d\n",numwords);
       //printf("\n");
 
@@ -468,11 +473,8 @@ int main(void)
       //print frame number (2nd word in packet)
       framenum =  ntohs(evtdata[2]) << 16 | ntohs(evtdata[3]);
       printf("Frame Number: %d\n", framenum);
-
-      printf("Numevents in Frame = %d\n",(numwords-8)/4);
-
-      printf("Events lost to Overflow: %d\n",
-              (ntohs(evtdata[numwords-4]) << 16 | ntohs(evtdata[numwords-3])));
+      printf("Numevents in Frame = %" PRId64 "\n", numevents);
+      printf("Events lost to Overflow: %" PRId64 "\n", numoverflows);
       //printf("EOF: %x\n",(ntohs(evtdata[numwords-2]) << 16 | ntohs(evtdata[numwords-1])));
 
       //save to disk
