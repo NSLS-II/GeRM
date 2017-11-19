@@ -378,6 +378,7 @@ uint gige_data_recv(gige_data_t *dat, uint16_t *data)
         }
 
        memcpy(&data[total_data/sizeof(uint16_t)], &mesg[src], n-(dest*sizeof(uint16_t)));
+
        total_data += n-(dest*sizeof(uint16_t));
        cnt++;
        i++;
@@ -486,20 +487,23 @@ int main(void)
 
       zmq_send(responder, frame_md, sizeof(frame_md), 0);
       strcat(filename,"_");
-      sprintf(framestr,"%03d",framenum);
-      strcat(filename,framestr);
-      strcat(filename,".bin");
+      sprintf(framestr, "%03d", framenum);
+      strcat(filename, framestr);
+      strcat(filename, ".bin");
       filenamelen = strlen(filename);
       fp = fopen(filename, "w");
       gettimeofday(&tvBegin, NULL);
       printf("Saving File : %s\n",filename);
-      fwrite(evtdata,numwords,sizeof(uint16_t),fp);
+      fwrite(evtdata, numwords, sizeof(uint16_t), fp);
       gettimeofday(&tvEnd, NULL);
-      printf("Wrote %4.2f MB to %s in %f sec\n", numwords*2/1e6, filename, (float)(time_elapsed(tvBegin, tvEnd)/1e6));
+      printf("Wrote %4.2f MB to %s in %f sec\n",
+	     numwords*2/1e6,
+	     filename,
+	     (float)(time_elapsed(tvBegin, tvEnd)/1e6));
       fclose(fp);
       zmq_recv(responder, fwmsg, sizeof(fwmsg), 0);
       printf("ZMQ msg: %s\n", fwmsg);
-      zmq_send(responder,filename, filenamelen, 0);
+      zmq_send(responder, filename, filenamelen, 0);
 
       printf("\n");
 
