@@ -2,7 +2,7 @@ from databroker.assets.handlers_base import HandlerBase
 import h5py
 import numpy as np
 
-from .zmq import parse_event_payload, DATA_TYPEMAP
+from .client import parse_event_payload, DATA_TYPEMAP
 
 
 class GeRMHandler(HandlerBase):
