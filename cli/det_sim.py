@@ -8,6 +8,8 @@ from collections import defaultdict
 import time
 import struct
 
+from pygerm.client import event2payload
+
 
 class ListenAndSend(DatagramProtocol):
     def __init__(self):
@@ -138,7 +140,7 @@ def make_sim_payload(num, n_chips, n_chans, tick_gap, ts_offset):
         NOTE : I choose some endianess here but it doesn't matter, it can be
         changed later on. We may receive a better performance between once
         versus the other, depending on what we send to etc.
-        ( Not sure about this)
+        (Not sure about this)
     '''
     # the endianness doesn't matter so much yet, but size does
     payload = np.zeros(num*2, dtype="<u4")
@@ -152,7 +154,7 @@ def make_sim_payload(num, n_chips, n_chans, tick_gap, ts_offset):
     # this gives 383 (binary to number) Commenting out and hard coding
     # to be safe
     # MAX_ID = bin2num(1, 0,1,1,1, 1,1,1,1)
-    MAX_ID = 2**6#383
+    MAX_ID = 383
 
     # for debugging, could change this to some other non-uniform function
     pix_id = np.random.randint(0, MAX_ID, size=num).astype('<u4')
@@ -161,20 +163,20 @@ def make_sim_payload(num, n_chips, n_chans, tick_gap, ts_offset):
 
     # fine timestamp
     td = np.random.randint(2**10, size=num, dtype='<u4')
+
     # energy
     # simulate a resonable looking energy by giving detector position
     # make it 4 byte integer
     pd = simulate_line(num, chip_id*n_chans + chan_id).astype('<u4')
+
     # coarse timestamp
     ts = np.mod((np.cumsum(
         np.random.poisson(tick_gap, size=num).astype('<u4')) +
                  ts_offset),
                 2**31)
-    # word 1 is the first view
-    payload[::2] = (pix_id << 22) + (td << 12) + pd
-    # word 2 is the second view
-    payload[1::2] = 2**31 + ts
-    payload = (chip_id << 27) + (chan_id << 22) + td + pd + ts
+
+    payload = event2payload(chip_id, chan_id, td, pd, ts)
+
     return payload, ts[-1]
 
 

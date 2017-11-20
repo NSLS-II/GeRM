@@ -30,7 +30,7 @@ def parse_event_payload(data):
 
     return chip, chan, td, pd, ts
 
-def parse_event_payload2(data):
+def payload2event(data):
     '''Split up the raw data coming over the socket.
 
     The documentation describes the data as 2 32 bit words with have
@@ -64,6 +64,35 @@ def parse_event_payload2(data):
 
     return chip, chan, td, pd, ts
 
+
+def event2payload(chip, chan, td, pd, ts):
+    ''' Convert event data to a payload.
+
+
+    This just creates words of the form:
+
+       "0" [[4 bit chip addr] [5 bit channel addr]] [10 bit TD] [12 bit PD]
+       "100" [28 bit time stamp]
+
+    Notes
+    -----
+        This does not include the header and footer.
+        The data is outputted as little endian by default.
+        Note that endianness matters only when this is sent to a buffer (file
+        network etc)
+    '''
+    # insigned little-endian, default
+    # 2 words of 32 bit per data
+    payload = np.zeros(len(chip)*2, dtype='<u4')
+    # TODO sort out if this can be made faster!
+    #word1 = data[::2]
+    #word2 = data[::2]
+    # for word 1
+    payload[::2] = (chip << 27) + (chan << 22) + (td << 12)  + pd
+    # for word 2
+    payload[1::2] = 1 << 31 + ts
+
+    return payload
 
 
 DATA_TYPES = OrderedDict((('chip', 8),
