@@ -24,8 +24,7 @@ def payload2event(data):
     # chan addr
     chan = word1 >> 22 & 0x1f
     # fine ts
-    # TODO : why 0x3ff not 1ff??
-    td = word1 >> 12 & 0x1ff
+    td = word1 >> 12 & 0x3ff
 
     # evergy readings
     pd = word1 & 0xfff
