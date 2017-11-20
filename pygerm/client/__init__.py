@@ -2,7 +2,7 @@ import numpy as np
 from collections import OrderedDict
 
 
-def parse_event_payload(data):
+def payload2event(data):
     '''Split up the raw data coming over the socket.
 
     The documentation describes the data as 2 32 bit words with have
@@ -11,24 +11,59 @@ def parse_event_payload(data):
     The layout is
 
        "0" [[4 bit chip addr] [5 bit channel addr]] [10 bit TD] [12 bit PD]
-       "1" [31 bit time stamp]
+       "1000" [28 bit time stamp]
 
     '''
 
     # TODO sort out if this can be made faster!
+    word1 = data[::2]
+    word2 = data[1::2]
 
     # chip addr
-    chip = (data >> (27)) & 0xf
+    chip = word1 >> 27 & 0xf
     # chan addr
-    chan = (data >> (22)) & 0x1f
+    chan = word1 >> 22 & 0x1f
     # fine ts
-    td = (data >> (12)) & 0x3ff
+    td = word1 >> 12 & 0x3ff
+
     # evergy readings
-    pd = (data) & 0xfff
+    pd = word1 & 0xfff
+
     # FPGA tick
-    ts = data >> 32 & 0x7fffffff
+    # should be 6 f's not 7??
+    ts = word2 & 0x7ffffff
 
     return chip, chan, td, pd, ts
+
+
+def event2payload(chip, chan, td, pd, ts):
+    ''' Convert event data to a payload.
+
+
+    This just creates words of the form:
+
+       "0" [[4 bit chip addr] [5 bit channel addr]] [10 bit TD] [12 bit PD]
+       "1000" [28 bit time stamp]
+
+    Notes
+    -----
+        This does not include the header and footer.
+        The data is outputted as little endian by default.
+        Note that endianness matters only when this is sent to a buffer (file
+        network etc)
+    '''
+    # insigned little-endian, default
+    # 2 words of 32 bit per data
+    payload = np.zeros(len(chip)*2, dtype='<u4')
+    # TODO sort out if this can be made faster!
+    # word1 = data[::2]
+    # word2 = data[1::2]
+    # for word 1
+    payload[::2] = (chip << 27) + (chan << 22) + (td << 12) + pd
+    # for word 2
+    payload[1::2] = 1 << 31 + ts
+
+    return payload
 
 
 DATA_TYPES = OrderedDict((('chip', 8),
@@ -68,8 +103,8 @@ class ZClient:
     def parse_message(self, topic, payload):
 
         if topic == self.TOPIC_DATA:
-            payload = parse_event_payload(
-                np.frombuffer(payload, np.uint64))
+            payload = payload2event(
+                np.frombuffer(payload, np.uint32))
         else:
             payload = np.frombuffer(payload, np.uint32)
         return topic, payload

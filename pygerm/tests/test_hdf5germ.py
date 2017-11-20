@@ -1,3 +1,9 @@
+import numpy as np
+import h5py
+
+from pygerm.client import DATA_TYPEMAP, event2payload
+
+
 # some setup
 def open_file(fpath):
     return h5py.File(fpath, 'r')
@@ -16,6 +22,7 @@ def hdf52event(fpath):
 
     return elem_dict
 
+
 def hdf52germ(fpath):
     res = hdf52event(fpath)
     # TODO : make this more formal
@@ -25,4 +32,4 @@ def hdf52germ(fpath):
     new_dict['td'] = res['timestamp_fine']
     new_dict['pd'] = res['energy']
     new_dict['ts'] = res['timestamp_coarse']
-    return payload2germ(**new_dict)
+    return event2payload(**new_dict)
