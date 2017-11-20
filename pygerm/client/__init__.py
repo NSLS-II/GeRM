@@ -30,7 +30,6 @@ def payload2event(data):
     pd = word1 & 0xfff
 
     # FPGA tick
-    # should be 6 f's not 7??
     ts = word2 & 0x7ffffff
 
     return chip, chan, td, pd, ts
@@ -59,9 +58,11 @@ def event2payload(chip, chan, td, pd, ts):
     # word1 = data[::2]
     # word2 = data[1::2]
     # for word 1
-    payload[::2] = (chip << 27) + (chan << 22) + (td << 12) + pd
+    payload[::2] = ((chip & 0xf) << 27) + ((chan & 0x1f) << 22) + \
+        ((td & 0x3ff) << 12) + (pd & 0xfff)
+
     # for word 2
-    payload[1::2] = 1 << 31 + ts
+    payload[1::2] = (0x1 << 31) + (ts & 0x7ffffff)
 
     return payload
 
