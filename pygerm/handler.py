@@ -40,7 +40,7 @@ class BinaryGeRMHandler(HandlerBase):
             raise ValueError(msg)
 
         # remove first and last region
-        raw_data = raw_data[1:-1]
+        raw_data = raw_data[2:-2]
         self.data = payload2event(raw_data)
 
     def __call__(self, column):

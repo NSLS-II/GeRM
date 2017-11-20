@@ -2,34 +2,6 @@ import numpy as np
 from collections import OrderedDict
 
 
-def parse_event_payload(data):
-    '''Split up the raw data coming over the socket.
-
-    The documentation describes the data as 2 32 bit words with have
-    been merged here into a single 64 bit value.
-
-    The layout is
-
-       "0" [[4 bit chip addr] [5 bit channel addr]] [10 bit TD] [12 bit PD]
-       "100" [28 bit time stamp]
-
-    '''
-
-    # TODO sort out if this can be made faster!
-
-    # chip addr
-    chip = (data >> (27)) & 0xf
-    # chan addr
-    chan = (data >> (22)) & 0x1f
-    # fine ts
-    td = (data >> (12)) & 0x3ff
-    # evergy readings
-    pd = (data) & 0xfff
-    # FPGA tick
-    ts = data >> 32 & 0x7fffffff
-
-    return chip, chan, td, pd, ts
-
 def payload2event(data):
     '''Split up the raw data coming over the socket.
 
@@ -45,7 +17,7 @@ def payload2event(data):
 
     # TODO sort out if this can be made faster!
     word1 = data[::2]
-    word2 = data[::2]
+    word2 = data[1::2]
 
     # chip addr
     chip = word1 >> 27 & 0xf
@@ -86,7 +58,7 @@ def event2payload(chip, chan, td, pd, ts):
     payload = np.zeros(len(chip)*2, dtype='<u4')
     # TODO sort out if this can be made faster!
     #word1 = data[::2]
-    #word2 = data[::2]
+    #word2 = data[1::2]
     # for word 1
     payload[::2] = (chip << 27) + (chan << 22) + (td << 12)  + pd
     # for word 2

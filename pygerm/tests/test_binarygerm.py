@@ -75,9 +75,10 @@ def test_binary_germ():
     fpath = tempfile.mktemp()
 
     germ_data = generate_germ_data()
-    germ_data.astype('>i4').tofile(fpath)
+    germ_data.astype('>u4').tofile(fpath)
     # strip first and last bit of payload
     # (endianness not issue here since this was generated from memory)
+
     chip, chan, td, ps, ts = payload2event(germ_data[2:-2])
 
     # instantiate the handler
