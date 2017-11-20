@@ -107,22 +107,6 @@ def simulate_random(n):
     return np.random.randint(0, high=2**12 + 1, size=n, dtype=np.uint32)
 
 
-def bin2num(*args):
-    ''' Convenience routine to convert binary digits to decimal.
-
-        ex:  1 0000 1111:
-            bin2num(1, 0,0,0,0, 1,1,1,1)
-        etc.
-    '''
-    # convert args to binary
-    args = list(args)
-    args.reverse()
-    res = 0
-    for i, arg in enumerate(args):
-        res += arg*2**i
-    return res
-
-
 def make_sim_payload(num, n_chips, n_chans, tick_gap, ts_offset):
     '''
        layout:
@@ -157,7 +141,7 @@ def make_sim_payload(num, n_chips, n_chans, tick_gap, ts_offset):
     #
     # this gives 383 (binary to number) Commenting out and hard coding
     # to be safe
-    # MAX_ID = bin2num(1, 0,1,1,1, 1,1,1,1)
+    # print(0b101111111) gives 383
     MAX_ID = 383
 
     # for debugging, could change this to some other non-uniform function
