@@ -11,7 +11,7 @@ def parse_event_payload(data):
     The layout is
 
        "0" [[4 bit chip addr] [5 bit channel addr]] [10 bit TD] [12 bit PD]
-       "1" [31 bit time stamp]
+       "100" [28 bit time stamp]
 
     '''
 
@@ -29,6 +29,41 @@ def parse_event_payload(data):
     ts = data >> 32 & 0x7fffffff
 
     return chip, chan, td, pd, ts
+
+def parse_event_payload2(data):
+    '''Split up the raw data coming over the socket.
+
+    The documentation describes the data as 2 32 bit words with have
+    been merged here into a single 64 bit value.
+
+    The layout is
+
+       "0" [[4 bit chip addr] [5 bit channel addr]] [10 bit TD] [12 bit PD]
+       "100" [28 bit time stamp]
+
+    '''
+
+    # TODO sort out if this can be made faster!
+    word1 = data[::2]
+    word2 = data[::2]
+
+    # chip addr
+    chip = word1 >> 27 & 0xf
+    # chan addr
+    chan = word1 >> 22 & 0x1f
+    # fine ts
+    # TODO : why 0x3ff not 1ff??
+    td = word1 >> 12 & 0x1ff
+
+    # evergy readings
+    pd = word1 & 0xfff
+
+    # FPGA tick
+    # should be 6 f's not 7??
+    ts = word2 & 0x7ffffff
+
+    return chip, chan, td, pd, ts
+
 
 
 DATA_TYPES = OrderedDict((('chip', 8),

@@ -87,31 +87,93 @@ n_chans = 32
 
 
 def simulate_line(n, c):
+    ''' simulate a line based on channel position c.
+        data type is not assumed here, typecast when receiving it.
+    '''
     c = c.astype(float)
     return np.clip(
         (0.5 + 0.4 * np.sin((2*np.pi * 3 / (12*32)) * c)) *
         ((2**7 * np.random.randn(n)) + 2**11),
-        0, 2**12 - 1).astype(np.uint64)
+        0, 2**12 - 1)
 
 
 def simulate_random(n):
     return np.random.randint(2**12, size=n, dtype=np.uint64)
 
+def bin2num(*args):
+    ''' Convenience routine to convert binary digits to decimal.
+
+        ex:  1 0000 1111:
+            bin2num(1, 0,0,0,0, 1,1,1,1)
+        etc.
+    '''
+    # convert args to binary
+    args = list(args)
+    args.reverse()
+    res = 0
+    for i, arg in enumerate(args):
+        res += arg*2**i
+    return res
+
+
 
 def make_sim_payload(num, n_chips, n_chans, tick_gap, ts_offset):
-    pix_id = np.clip((50 * np.random.randn(num) + 192),
-                     0, 383).astype(np.uint64)
+    '''
+       layout:
+       "0" [[4 bit chip addr] [5 bit channel addr]] [10 bit TD] [12 bit PD]
+       "1000" [28 bit time stamp]
+
+        pix_id is chip_no*n_chans + chan_no
+            and n_chans will be 2**(some value)
+            (Im guessing)
+
+        Here, n_chips is 12 which means values go from 0-11
+            which is 0000 to 1011 in binary
+        n_chans is 32 which means values go from 0-31
+            which means 0000 to 1111
+
+        max value is [1011] [1 1111] = 1 0111 1111
+        this equals 383.
+
+        NOTE : I choose some endianess here but it doesn't matter, it can be
+        changed later on. We may receive a better performance between once
+        versus the other, depending on what we send to etc.
+        ( Not sure about this)
+    '''
+    # the endianness doesn't matter so much yet, but size does
+    payload = np.zeros(num*2, dtype="<u4")
+    # the two words as a view in numpy
+    # word1 = payload[::2]
+    # word2 = payload[1::2]
+
+    # choose a random pixel id
+    # n_chips, n_chans are 12, 32 (or see var set above)
+    #  
+    # this gives 383 (binary to number) Commenting out and hard coding
+    # to be safe
+    # MAX_ID = bin2num(1, 0,1,1,1, 1,1,1,1)
+    MAX_ID = 2**6#383
+
+    # for debugging, could change this to some other non-uniform function
+    pix_id = np.random.randint(0, MAX_ID, size=num).astype('<u4')
     chip_id = pix_id // n_chans
     chan_id = pix_id % n_chans
+
     # fine timestamp
-    td = np.random.randint(2**10, size=num, dtype=np.uint64) << (12)
+    td = np.random.randint(2**10, size=num, dtype='<u4')
     # energy
-    pd = simulate_line(num, chip_id*32 + chan_id)
+    # simulate a resonable looking energy by giving detector position
+    # make it 4 byte integer
+    pd = simulate_line(num, chip_id*n_chans + chan_id).astype('<u4')
     # coarse timestamp
     ts = np.mod((np.cumsum(
-        np.random.poisson(tick_gap, size=num).astype(np.uint64)) +
+        np.random.poisson(tick_gap, size=num).astype('<u4')) +
                  ts_offset),
-                2**31) << 32
+                2**31)
+    # word 1 is the first view
+    payload[::2] = (pix_id << 22) + (td << 12) + pd
+    # word 2 is the second view
+    payload[1::2] = 2**31 + ts
     payload = (chip_id << 27) + (chan_id << 22) + td + pd + ts
     return payload, ts[-1]
 
@@ -145,11 +207,16 @@ async def recv_and_process():
                                                   n_chips, n_chans,
                                                   tick_gap,
                                                   ts_offset)
+            # use astype to ensure it's prepared for big endian (network order)
+            payload = payload.astype('>u4')
             await publisher.send_multipart([b'data', payload])
             if udp_packet_count == 0:
                 # special case packet 0
                 tail = payload
-                head, tail = tail[:510], tail[510:]
+                head, tail = tail[:1020], tail[1020:]
+                # 'x' is a pad byte, xxxx is same size as I (4 byte unsigned int)
+                # packets are 1024*4 bytes long total, first four unsigned ints
+                # (4 bytes each) are here, rest is data
                 header = struct.pack('!IIIxxxx',
                                      udp_packet_count,
                                      0xfeedface,
@@ -158,17 +225,19 @@ async def recv_and_process():
                                    bytes(head))))
                 udp_packet_count += 1
             else:
-                first_head = 511 - len(tail)
+                first_head = 1022 - len(tail)
                 head = (tail, payload[:first_head])
                 tail = payload[first_head:]
+                # 2 unsigned ints I and xxxx 
                 header = struct.pack('!Ixxxx', udp_packet_count)
                 udp.send(b''.join((header,
                                    bytes(head[0]),
                                    bytes(head[1]))))
                 udp_packet_count += 1
 
-            while len(tail) > 511:
-                head, tail = tail[:511], tail[511:]
+            while len(tail) > 1022:
+                head, tail = tail[:1022], tail[1022:]
+                # 2 unsigned ints I and xxxx 
                 header = struct.pack('!Ixxxx', udp_packet_count)
                 udp.send(b''.join((header, bytes(head))))
                 udp_packet_count += 1
@@ -178,9 +247,10 @@ async def recv_and_process():
                            bytes(tail),
                            footer)))
 
+        # <u4 little endian 4 byte unsigned int
         await publisher.send_multipart([b'meta',
                                         np.array([state[FRAMENUMREG], 0],
-                                                 dtype=np.uint32)])
+                                                 dtype='<u4')])
         return np.sum(num_per_msg, dtype=np.intp)
 
     while True:
