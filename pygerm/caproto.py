@@ -7,7 +7,7 @@ import time
 import curio
 import curio.zmq as zmq
 import struct
-from .client import DATA_TYPES
+from .client import DATA_TYPES, DATA_TYPEMAP
 from .client.curio_zmq import ZClientCurio, ZClientCurioBase, UClientCurio
 from . import TRIGGER_SETUP_SEQ, START_DAQ, STOP_DAQ
 
@@ -67,14 +67,19 @@ class ChannelGeRMAcquireUDP(ca.ChannelData):
                                    written_file.decode(),
                                    {})
 
-        for short in ('chip', 'chan', 'td', 'pd', 'ts'):
+        for short, long_name in (
+                ('chip', 'chip'),
+                ('chan', 'chan'),
+                ('td', 'timestamp_fine'),
+                ('pd', 'energy'),
+                ('ts', 'timestamp_coarse')):
             print(f'short: {short}')
             chan_name = f'uid_{short}_channel'
             print(f'chan_name: {chan_name}')
             chan = getattr(self.parent, chan_name)
             print(f'chan: {chan}')
             dset_uid = str(uuid.uuid4())
-            dset_uid = fs.register_datum(res, {'column': short})
+            dset_uid = fs.register_datum(res, {'column': long_name})
 
             await chan.write_from_dbr(
                 dset_uid.encode(), ca.ChannelType.STRING, None)
