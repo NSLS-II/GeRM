@@ -39,7 +39,6 @@ class ListenAndSend(DatagramProtocol):
     def send(self, data):
         if not self.armed:
             return
-        print(len(data) // 4)
         self.transport.sendto(data, (self.target_addr[0], 0x7D03))
 
 
