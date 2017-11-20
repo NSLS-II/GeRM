@@ -91,16 +91,20 @@ n_chans = 32
 def simulate_line(n, c):
     ''' simulate a line based on channel position c.
         data type is not assumed here, typecast when receiving it.
+
+        This should create a curve that goes sinusoidally as the channel #.
+        (But same for all chip numbers)
     '''
-    c = c.astype(float)
-    return np.clip(
-        (0.5 + 0.4 * np.sin((2*np.pi * 3 / (12*32)) * c)) *
-        ((2**7 * np.random.randn(n)) + 2**11),
-        0, 2**12 - 1)
+    chan = c%n_chans
+    chip = c//n_chans
+
+    chan = chan.astype(float)
+    # just make sinusoidal wave
+    return (np.abs(np.sin((chan/n_chans)*2*np.pi))*(2**12-1)).astype(np.uint32)
 
 
 def simulate_random(n):
-    return np.random.randint(2**12, size=n, dtype=np.uint64)
+    return np.random.randint(0, high=2**12 + 1, size=n, dtype=np.uint32)
 
 def bin2num(*args):
     ''' Convenience routine to convert binary digits to decimal.
@@ -157,12 +161,12 @@ def make_sim_payload(num, n_chips, n_chans, tick_gap, ts_offset):
     MAX_ID = 383
 
     # for debugging, could change this to some other non-uniform function
-    pix_id = np.random.randint(0, MAX_ID, size=num).astype('<u4')
+    pix_id = np.random.randint(0, high=MAX_ID+1, size=num).astype('<u4')
     chip_id = pix_id // n_chans
     chan_id = pix_id % n_chans
 
     # fine timestamp
-    td = np.random.randint(2**10, size=num, dtype='<u4')
+    td = np.random.randint(0, high=2**10+1, size=num, dtype='<u4')
 
     # energy
     # simulate a resonable looking energy by giving detector position
