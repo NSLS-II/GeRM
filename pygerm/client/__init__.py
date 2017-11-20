@@ -11,7 +11,7 @@ def payload2event(data):
     The layout is
 
        "0" [[4 bit chip addr] [5 bit channel addr]] [10 bit TD] [12 bit PD]
-       "100" [28 bit time stamp]
+       "1000" [28 bit time stamp]
 
     '''
 
@@ -44,7 +44,7 @@ def event2payload(chip, chan, td, pd, ts):
     This just creates words of the form:
 
        "0" [[4 bit chip addr] [5 bit channel addr]] [10 bit TD] [12 bit PD]
-       "100" [28 bit time stamp]
+       "1000" [28 bit time stamp]
 
     Notes
     -----
