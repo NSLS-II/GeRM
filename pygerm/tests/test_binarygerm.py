@@ -57,7 +57,7 @@ def generate_germ_data():
 
     # slicing preserves the data type
     germ_data[2:-2] = payload
-    # some 
+    # some
     germ_data[0] = 0xfeedface
     # frame number
     germ_data[1] = 0

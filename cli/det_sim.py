@@ -95,8 +95,8 @@ def simulate_line(n, c):
         This should create a curve that goes sinusoidally as the channel #.
         (But same for all chip numbers)
     '''
-    chan = c%n_chans
-    chip = c//n_chans
+    chan = c % n_chans
+    # chip = c // n_chans
 
     chan = chan.astype(float)
     # just make sinusoidal wave
@@ -105,6 +105,7 @@ def simulate_line(n, c):
 
 def simulate_random(n):
     return np.random.randint(0, high=2**12 + 1, size=n, dtype=np.uint32)
+
 
 def bin2num(*args):
     ''' Convenience routine to convert binary digits to decimal.
@@ -120,7 +121,6 @@ def bin2num(*args):
     for i, arg in enumerate(args):
         res += arg*2**i
     return res
-
 
 
 def make_sim_payload(num, n_chips, n_chans, tick_gap, ts_offset):
@@ -154,7 +154,7 @@ def make_sim_payload(num, n_chips, n_chans, tick_gap, ts_offset):
 
     # choose a random pixel id
     # n_chips, n_chans are 12, 32 (or see var set above)
-    #  
+    #
     # this gives 383 (binary to number) Commenting out and hard coding
     # to be safe
     # MAX_ID = bin2num(1, 0,1,1,1, 1,1,1,1)
@@ -220,7 +220,8 @@ async def recv_and_process():
                 # special case packet 0
                 tail = payload
                 head, tail = tail[:1020], tail[1020:]
-                # 'x' is a pad byte, xxxx is same size as I (4 byte unsigned int)
+                # 'x' is a pad byte, xxxx is same size as I (4 byte unsigned
+                # int)
                 # packets are 1024*4 bytes long total, first four unsigned ints
                 # (4 bytes each) are here, rest is data
                 header = struct.pack('!IIIxxxx',
@@ -234,7 +235,7 @@ async def recv_and_process():
                 first_head = 1022 - len(tail)
                 head = (tail, payload[:first_head])
                 tail = payload[first_head:]
-                # 2 unsigned ints I and xxxx 
+                # 2 unsigned ints I and xxxx
                 header = struct.pack('!Ixxxx', udp_packet_count)
                 udp.send(b''.join((header,
                                    bytes(head[0]),
@@ -243,7 +244,7 @@ async def recv_and_process():
 
             while len(tail) > 1022:
                 head, tail = tail[:1022], tail[1022:]
-                # 2 unsigned ints I and xxxx 
+                # 2 unsigned ints I and xxxx
                 header = struct.pack('!Ixxxx', udp_packet_count)
                 udp.send(b''.join((header, bytes(head))))
                 udp_packet_count += 1
