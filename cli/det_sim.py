@@ -76,9 +76,9 @@ loop = zmq.asyncio.ZMQEventLoop()
 asyncio.set_event_loop(loop)
 
 # average number of events per msg
-N = 5000
+N = 500000
 # number of messages
-n_msgs = 5
+n_msgs = 50
 # average total exposure
 simulated_exposure = 10
 # expected ticks between events
@@ -100,8 +100,9 @@ def simulate_line(n, c):
     # chip = c // n_chans
 
     chan = chan.astype(float)
-    # just make sinusoidal wave
-    return (np.abs(np.sin((chan/n_chans)*2*np.pi))*(2**12-1)).astype(np.uint32)
+    return np.clip(
+        (np.random.randn(len(chan)) * 100) + 1000 + 2000 * (chan / n_chans),
+        0, 2**12 - 1)
 
 
 def simulate_random(n):
