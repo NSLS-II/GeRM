@@ -36,6 +36,7 @@ class ListenAndSend(DatagramProtocol):
             self.target_addr = None
 
         # echo back the correct thing
+        # 'x' is a pad byte, xxxx is same size as I (4 byte unsigned)
         self.transport.sendto(struct.pack('!xxxxI', 0x4f6b6179), addr)
 
     def send(self, data):
@@ -204,11 +205,9 @@ async def recv_and_process():
                 # special case packet 0
                 tail = payload
                 head, tail = tail[:1020], tail[1020:]
-                # 'x' is a pad byte, xxxx is same size as I (4 byte unsigned
-                # int)
                 # packets are 1024*4 bytes long total, first four unsigned ints
                 # (4 bytes each) are here, rest is data
-                header = struct.pack('!IIIxxxx',
+                header = struct.pack('!III',
                                      udp_packet_count,
                                      0xfeedface,
                                      state[FRAMENUMREG])
@@ -219,8 +218,7 @@ async def recv_and_process():
                 first_head = 1022 - len(tail)
                 head = (tail, payload[:first_head])
                 tail = payload[first_head:]
-                # 2 unsigned ints I and xxxx
-                header = struct.pack('!Ixxxx', udp_packet_count)
+                header = struct.pack('!I', udp_packet_count)
                 udp.send(b''.join((header,
                                    bytes(head[0]),
                                    bytes(head[1]))))
@@ -228,11 +226,10 @@ async def recv_and_process():
 
             while len(tail) > 1022:
                 head, tail = tail[:1022], tail[1022:]
-                # 2 unsigned ints I and xxxx
-                header = struct.pack('!Ixxxx', udp_packet_count)
+                header = struct.pack('!I', udp_packet_count)
                 udp.send(b''.join((header, bytes(head))))
                 udp_packet_count += 1
-        header = struct.pack('!Ixxxx', udp_packet_count)
+        header = struct.pack('!I', udp_packet_count)
         footer = struct.pack('!II', 0, 0xdecafbad)
         udp.send(b''.join((header,
                            bytes(tail),
