@@ -2,10 +2,10 @@ from databroker.assets.sqlite import Registry
 from databroker.headersource.sqlite import MDS
 from databroker import Broker
 import bluesky as bs
-
+import bluesky.plans as bp
 
 from pygerm.ophyd import GeRM
-from pygerm.handler import GeRMHandler
+from pygerm.handler import GeRMHandler, BinaryGeRMHandler
 
 import numpy as np
 import pandas as pd
@@ -15,6 +15,7 @@ from lmfit import Model
 # generic configuration, is already on the beamline
 reg = Registry({'dbpath': '/tmp/fs.sqlite'})
 reg.register_handler('GeRM', GeRMHandler)
+reg.register_handler('BinaryGeRM', BinaryGeRMHandler)
 
 mds = MDS({'directory': '/tmp/mds.sqlite', 'timezone': 'US/Eastern'})
 

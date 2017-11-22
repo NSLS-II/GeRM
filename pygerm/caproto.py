@@ -2,92 +2,89 @@ import numpy as np
 import h5py
 from pathlib import Path
 import caproto as ca
-import curio
-import curio.zmq as zmq
-from pygerm.zmq import ZClient, DATA_TYPES
-from pygerm import TRIGGER_SETUP_SEQ, START_DAQ, STOP_DAQ
 import uuid
 import time
+import curio
+import curio.zmq as zmq
+import struct
+from .client import DATA_TYPES, DATA_TYPEMAP
+from .client.curio_zmq import ZClientCurio, ZClientCurioBase, UClientCurio
+from . import TRIGGER_SETUP_SEQ, START_DAQ, STOP_DAQ
 
 
-class ZClientCaproto(ZClient):
-    def __init__(self, *args, max_events=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.acq_done = curio.Condition()
-        self.collecting = False
-        self.data_buffer = []
-        self.last_frame = None
-        self.overfill = 0
-        self.max_events = max_events
-        self.cmd_lock = curio.Lock()
+class ChannelGeRMAcquireUDP(ca.ChannelData):
+    def __init__(self, *, zclient, uclient, parent, **kwargs):
+        super().__init__(**kwargs)
+        self.zclient = zclient
+        self.uclient = uclient
+        self.parent = parent
 
-    async def __cntrl_recv(self):
-        msg = await self.ctrl_sock.recv()
-        return np.frombuffer(msg, dtype=np.uint32)
-
-    async def __cntrl_send(self, payload):
-        payload = np.asarray(payload, dtype=np.uint32)
-        return (await self.ctrl_sock.send(payload))
-
-    async def read(self, addr):
-        async with self.cmd_lock:
-            await self.__cntrl_send([0x0, addr, 0x0])
-            ret = await self.__cntrl_recv()
-            return ret[2]
-
-    async def write(self, addr, value):
-        print(f'writting addr 0x{addr:x} val {value}')
-        async with self.cmd_lock:
-            await self.__cntrl_send([0x1, addr, value])
-            # bounce the whole message back
-            ret = await self.__cntrl_recv()
-            return ret
-
-    async def read_forever(self):
-        while True:
-            # just read from the zmq socket
-            topic, payload = await self.data_sock.recv_multipart()
-            # if we are not collecting, then bail and read again!
-            if not self.collecting:
-                continue
-            # if we are collecting, unpack the payload
-            topic, data = self.parse_message(topic, payload)
-            if topic == self.TOPIC_META:
-                self.last_frame, self.overfill = data
-
-                # if we saw a frame meta, we are done
-                async with self.acq_done:
-                    await self.acq_done.notify_all()
-            elif topic == self.TOPIC_DATA:
-                # if just data update the internal state
-                self.data_buffer.append(data)
-                new_ev = len(data[0])
-                self.total_events += new_ev
-            else:
-                raise RuntimeError("should never get here")
-            # if we have seen more than the maximum number of events
-            if (self.max_events is not None and
-                    self.total_events > self.max_events):
-                # set the last frame to `None` (because we are now out
-                # of sync!)
-                self.last_frame = None
-                # and report that we are done
-                async with self.acq_done:
-                    await self.acq_done.notify_all()
+    async def write_from_dbr(self, data, data_type, metadata):
+        await super().write_from_dbr(data, data_type, metadata)
+        await self.trigger_frame()
 
     async def trigger_frame(self):
-        self.data_buffer.clear()
-        self.total_events = 0
-        self.collecting = True
+        zc = self.zclient
+        uc = self.uclient
 
-        async with self.acq_done:
-            await self.acq_done.wait()
-            self.collecting = False
+        for (addr, val) in TRIGGER_SETUP_SEQ:
+            if addr is None:
+                await curio.sleep(val)
+            else:
+                await zc.write(addr, val)
 
-    async def read_frame(self):
-        await self.trigger_frame()
-        return (self.last_frame, self.total_events,
-                self.data_buffer, self.overfill)
+        # expect this to come back as a length 1 list with
+        # a Bytes object in it
+        write_path, = self.parent.filepath_channel.value
+
+        await uc.ctrl_sock.send(write_path)
+        resp = await uc.ctrl_sock.recv()
+        if resp != b'Received Filename':
+            print("DANGER WILL ROBINSON")
+            return
+
+        await zc.write(*START_DAQ)
+        await uc.ctrl_sock.send(b'ack')
+        payload = await uc.ctrl_sock.recv()
+
+        await uc.ctrl_sock.send(b'ack')
+        written_file = await uc.ctrl_sock.recv()
+        await self.parent.last_file_channel.write_from_dbr(
+            [written_file], ca.ChannelType.STRING, None)
+
+        await zc.write(*STOP_DAQ)
+        fr_num, ev_count, overfill = struct.unpack('QQQ', payload)
+
+        await self.parent.last_frame_channel.write_from_dbr(
+            [fr_num], ca.ChannelType.INT, None)
+        await self.parent.overfill_channel.write_from_dbr(
+            [overfill], ca.ChannelType.INT, None)
+        await self.parent.count_channel.write_from_dbr(
+            [ev_count], ca.ChannelType.INT, None)
+
+        fs = self.parent._fs
+        res = fs.register_resource('BinaryGeRM', '/',
+                                   written_file.decode(),
+                                   {})
+
+        for short, long_name in (
+                ('chip', 'chip'),
+                ('chan', 'chan'),
+                ('td', 'timestamp_fine'),
+                ('pd', 'energy'),
+                ('ts', 'timestamp_coarse')):
+            print(f'short: {short}')
+            chan_name = f'uid_{short}_channel'
+            print(f'chan_name: {chan_name}')
+            chan = getattr(self.parent, chan_name)
+            print(f'chan: {chan}')
+            dset_uid = str(uuid.uuid4())
+            dset_uid = fs.register_datum(res, {'column': long_name})
+
+            await chan.write_from_dbr(
+                dset_uid.encode(), ca.ChannelType.STRING, None)
+
+        return fr_num, ev_count, overfill
 
 
 class ChannelGeRMAcquire(ca.ChannelData):
@@ -97,19 +94,20 @@ class ChannelGeRMAcquire(ca.ChannelData):
         self.zclient = zclient
         self.parent = parent
 
-    async def set_dbr_data(self, data, data_type, metadata):
-        await super().set_dbr_data(data, data_type, metadata)
+    async def write_from_dbr(self, data, data_type, metadata):
+        await super().write_from_dbr(data, data_type, metadata)
         if data:
             start_time = time.time()
-            fr_num, ev_count, data, overfill = await triggered_frame(self.zclient)
+            fr_num, ev_count, data, overfill = (
+                await self.zclient.triggered_frame())
             delta_time = time.time() - start_time
             print(f'read frame: {fr_num} with {ev_count} '
                   f'events in {delta_time}s ({ev_count / delta_time} ev/s )')
-            await self.parent.count_channel.set_dbr_data(
+            await self.parent.count_channel.write_from_dbr(
                 ev_count, ca.DBR_INT.DBR_ID, None)
-            await self.parent.overfill_channel.set_dbr_data(
+            await self.parent.overfill_channel.write_from_dbr(
                 overfill, ca.DBR_INT.DBR_ID, None)
-            await self.parent.last_frame_channel.set_dbr_data(
+            await self.parent.last_frame_channel.write_from_dbr(
                 fr_num, ca.DBR_INT.DBR_ID, None)
             try:
                 start_time = time.time()
@@ -131,7 +129,7 @@ class ChannelGeRMAcquire(ca.ChannelData):
                             for k, d in zip(DATA_TYPES, payload):
                                 dsets[k][offset:offset+bunch_len] = d
                             offset += bunch_len
-                    await self.parent.last_file_channel.set_dbr_data(
+                    await self.parent.last_file_channel.write_from_dbr(
                         str(fname.name), ca.DBR_STRING.DBR_ID, None)
                     if self.parent._fs:
                         fs = self.parent._fs
@@ -145,7 +143,7 @@ class ChannelGeRMAcquire(ca.ChannelData):
                             dset_uid = str(uuid.uuid4())
                             fs.insert_datum(res, dset_uid, {'column': dset})
 
-                            await chan.set_dbr_data(
+                            await chan.write_from_dbr(
                                 dset_uid, ca.DBR_STRING.DBR_ID, None)
                 delta_time = time.time() - start_time
                 print(f'wrote frame: {fr_num} with {ev_count} '
@@ -157,7 +155,7 @@ class ChannelGeRMAcquire(ca.ChannelData):
                 print('failed')
                 print(e)
 
-            await super().set_dbr_data(0, data_type, None)
+            await super().write_from_dbr(0, data_type, None)
 
 
 class ChannelGeRMFrameTime(ca.ChannelDouble):
@@ -172,7 +170,7 @@ class ChannelGeRMFrameTime(ca.ChannelDouble):
         super().__init__(units=units, **kwargs)
         self.zclient = zclient
 
-    async def set_dbr_data(self, data, data_type, metadata):
+    async def write_from_dbr(self, data, data_type, metadata):
         data, = data
 
         if data > self.MAXT or data < 0:
@@ -180,7 +178,7 @@ class ChannelGeRMFrameTime(ca.ChannelDouble):
             return
         counts = data / self.RESOLUTION
         await self.zclient.write(0xd4, np.int32(counts))
-        ret = await super().set_dbr_data(data, data_type, metadata)
+        ret = await super().write_from_dbr(data, data_type, metadata)
         return ret
 
     async def get_dbr_data(self, type_):
@@ -191,55 +189,61 @@ class ChannelGeRMFrameTime(ca.ChannelDouble):
         return ret
 
 
-class GeRMIOC:
-    def __init__(self, zmq_url, fs):
+class GeRMIOCBase:
+    def __init__(self, *, fs):
         self._fs = fs
-        self.zclient = ZClientCaproto(zmq_url, zmq=zmq)
 
-        self.acquire_channel = ChannelGeRMAcquire(
-            value=0, zclient=self.zclient, parent=self)
-
+        # this assumes a sub-class creates self.zclient and then calls
+        # super()
         self.frametime_channel = ChannelGeRMFrameTime(
             value=1, zclient=self.zclient)
 
-        self.filepath_channel = ca.ChannelChar(
-            value='/tmp', string_encoding='latin-1')
+        # limited length, but works!
+        self.filepath_channel = ca.ChannelString(
+            value=b'/tmp/test', string_encoding='latin-1')
         self.last_file_channel = ca.ChannelString(
-            value='null', string_encoding='latin-1')
+            value=b'null', string_encoding='latin-1')
 
         self.count_channel = ca.ChannelInteger(value=0)
         self.overfill_channel = ca.ChannelInteger(value=0)
         self.last_frame_channel = ca.ChannelInteger(value=0)
 
         self.uid_chip_channel = ca.ChannelString(
-            value='null', string_encoding='latin-1')
+            value=b'null', string_encoding='latin-1')
         self.uid_chan_channel = ca.ChannelString(
-            value='null', string_encoding='latin-1')
+            value=b'null', string_encoding='latin-1')
         self.uid_td_channel = ca.ChannelString(
-            value='null', string_encoding='latin-1')
+            value=b'null', string_encoding='latin-1')
         self.uid_pd_channel = ca.ChannelString(
-            value='null', string_encoding='latin-1')
+            value=b'null', string_encoding='latin-1')
         self.uid_ts_channel = ca.ChannelString(
-            value='null', string_encoding='latin-1')
+            value=b'null', string_encoding='latin-1')
 
 
-async def triggered_frame(zc):
-    for (addr, val) in TRIGGER_SETUP_SEQ:
-        if addr is None:
-            await curio.sleep(val)
-        else:
-            await zc.write(addr, val)
+class GeRMIOCZMQData(GeRMIOCBase):
+    def __init__(self, zync_url, fs):
+        self.zclient = ZClientCurio(zync_url, zmq=zmq)
 
-    await zc.write(*START_DAQ)
-    # cal pulse for debugging sometimes
-    # await zc.write(0x10, 0xfff)
-    # await zc.write(0x10, 0x0)
-    fr_num, ev_count, data, overfill = await zc.read_frame()
-    await zc.write(*STOP_DAQ)
+        super().__init__(fs=fs)
 
-    return fr_num, ev_count, data, overfill
+        self.acquire_channel = ChannelGeRMAcquire(
+            value=0, zclient=self.zclient, parent=self)
+
+
+class GeRMIOCUDPData(GeRMIOCBase):
+    def __init__(self, zync_url, udp_ctrl_url, fs):
+        context = zmq.Context()
+
+        self.zclient = ZClientCurioBase(zync_url, zmq=zmq, context=context)
+        self.udp_client = UClientCurio(udp_ctrl_url, zmq=zmq, context=context)
+
+        super().__init__(fs=fs)
+
+        self.acquire_channel = ChannelGeRMAcquireUDP(
+            value=0, zclient=self.zclient, uclient=self.udp_client,
+            parent=self)
 
 
 async def runner(germ):
     await curio.spawn(germ.zclient.read_forever, daemon=True)
-    return await triggered_frame(germ.zclient)
+    return (await germ.zclient.triggered_frame())
