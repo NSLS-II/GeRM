@@ -42,3 +42,8 @@ class GeRM(Device):
 
     def trigger(self):
         return self.acquire.set(1)
+
+
+class GeRMUDP(GeRM):
+    write_root = Cpt(EpicsSignal, ':write_root', put_complete=True)
+    read_root = Cpt(EpicsSignal, ':read_root', put_complete=True)

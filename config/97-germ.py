@@ -4,7 +4,7 @@ from databroker import Broker
 import bluesky as bs
 import bluesky.plans as bp
 
-from pygerm.ophyd import GeRM
+from pygerm.ophyd import GeRMUDP
 from pygerm.handler import GeRMHandler, BinaryGeRMHandler
 
 import numpy as np
@@ -27,11 +27,12 @@ RE.subscribe(db.insert)
 
 
 # create the GeRM object
-germ = GeRM('XF:28IDC-ES:1{Det:GeRM1}', name='germ',
-            read_attrs=['filepath', 'last_file',
-                        'chip', 'chan',
-                        'td', 'pd', 'ts', 'count'],
-            configuration_attrs=['frametime'])
+germ = GeRMUDP('XF:28IDC-ES:1{Det:GeRM1}', name='germ',
+               read_attrs=['last_file',
+                           'chip', 'chan',
+                           'td', 'pd', 'ts', 'count'],
+               configuration_attrs=['frametime', 'write_root',
+                                    'read_root', 'filepath'])
 
 
 # gaussian fit
