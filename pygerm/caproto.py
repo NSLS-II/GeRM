@@ -2,10 +2,12 @@ import numpy as np
 import h5py
 from pathlib import Path
 import caproto as ca
+from concurrent.futures import ThreadPoolExecutor
 import uuid
 import time
 import curio
 import curio.zmq as zmq
+import shutil
 import struct
 from .client import DATA_TYPES, DATA_TYPEMAP
 from .client.curio_zmq import ZClientCurio, ZClientCurioBase, UClientCurio
@@ -67,6 +69,12 @@ class ChannelGeRMAcquireUDP(ca.ChannelData):
                                    written_file.decode(),
                                    {})
 
+        srcfile = written_file.decode()
+        destfile = 'who-knows-where'
+        
+        ex = ThreadPoolExecutor(max_workers=2)
+        stat = ex.submit(shutil.copy, srcfile, destfile) 
+        
         for short, long_name in (
                 ('chip', 'chip'),
                 ('chan', 'chan'),
