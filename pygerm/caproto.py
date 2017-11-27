@@ -75,7 +75,7 @@ class ChannelGeRMAcquireUDP(ca.ChannelData):
             raise Exception("src mount point must be absolute")
 
         if not dest_mount.is_absolute():
-            raise Exception("destination mount point  must be absolute")
+            raise Exception("destination mount point must be absolute")
 
         await uc.ctrl_sock.send(str(write_root / write_path).encode('latin-1'))
         resp = await uc.ctrl_sock.recv()
