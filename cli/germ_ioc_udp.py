@@ -15,7 +15,7 @@ def create_server(zync_url, udp_url, fs):
             f'{prefix}:filepath': germ.filepath_channel,
             f'{prefix}:read_root': germ.readroot_channel,
             f'{prefix}:write_root': germ.writeroot_channel,
-            
+
             f'{prefix}:src_mount': germ.srcmount_channel,
             f'{prefix}:dest_mount': germ.destmount_channel,
 

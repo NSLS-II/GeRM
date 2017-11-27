@@ -111,11 +111,11 @@ class ChannelGeRMAcquireUDP(ca.ChannelData):
             rpath=str(relative_filename),
             rkwargs={})
 
-        src_filename = src_mount / relative_filename 
+        src_filename = src_mount / relative_filename
         dest_filename = dest_mount / relative_filename
 
-        stat = self.file_copy_executor.submit(shutil.copy, str(src_filename), str(dest_filename)) 
-        
+        stat = self.file_copy_executor.submit(shutil.copy, str(src_filename), str(dest_filename))
+
         for short, long_name in (
                 ('chip', 'chip'),
                 ('chan', 'chan'),
@@ -296,6 +296,12 @@ class GeRMIOCUDPData(GeRMIOCBase):
             value=b'/', string_encoding='latin-1')
 
         self.writeroot_channel = ca.ChannelString(
+            value=b'/', string_encoding='latin-1')
+
+        self.srcmount_channel = ca.ChannelString(
+            value=b'/', string_encoding='latin-1')
+
+        self.destmount_channel = ca.ChannelString(
             value=b'/', string_encoding='latin-1')
 
 
