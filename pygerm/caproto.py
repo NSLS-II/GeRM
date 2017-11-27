@@ -2,10 +2,12 @@ import numpy as np
 import h5py
 from pathlib import Path
 import caproto as ca
+from concurrent.futures import ThreadPoolExecutor
 import uuid
 import time
 import curio
 import curio.zmq as zmq
+import shutil
 import struct
 import traceback
 
@@ -99,6 +101,12 @@ class ChannelGeRMAcquireUDP(ca.ChannelData):
             rpath=str(written_path.relative_to(write_root)),
             rkwargs={})
 
+        srcfile = written_file.decode()
+        destfile = 'who-knows-where'
+        
+        ex = ThreadPoolExecutor(max_workers=2)
+        stat = ex.submit(shutil.copy, srcfile, destfile) 
+        
         for short, long_name in (
                 ('chip', 'chip'),
                 ('chan', 'chan'),
