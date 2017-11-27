@@ -192,7 +192,7 @@ class ChannelGeRMAcquire(ca.ChannelData):
 
 class ChannelGeRMFrameTime(ca.ChannelDouble):
 
-    RESOLUTION = 4e-8  # 40 ns
+    RESOLUTION = 1e-6  # 1 us (microsecond)
     MAXT = (2**32 - 1) * RESOLUTION
 
     def __init__(self, zclient, *, units='s', **kwargs):
