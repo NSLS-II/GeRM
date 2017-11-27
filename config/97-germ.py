@@ -30,7 +30,7 @@ RE.subscribe(db.insert)
 germ = GeRMUDP('XF:28IDC-ES:1{Det:GeRM1}', name='germ',
                read_attrs=['last_file',
                            'chip', 'chan',
-                           'td', 'pd', 'ts', 'count'],
+                           'td', 'pd', 'ts', 'count', 'overfill'],
                configuration_attrs=['frametime', 'write_root',
                                     'read_root', 'filepath'])
 
