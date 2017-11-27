@@ -7,7 +7,7 @@ import time
 import curio
 import curio.zmq as zmq
 import struct
-from .client import DATA_TYPES, DATA_TYPEMAP
+from .client import DATA_TYPES
 from .client.curio_zmq import ZClientCurio, ZClientCurioBase, UClientCurio
 from . import TRIGGER_SETUP_SEQ, START_DAQ, STOP_DAQ
 
@@ -26,6 +26,7 @@ class ChannelGeRMAcquireUDP(ca.ChannelData):
     async def trigger_frame(self):
         zc = self.zclient
         uc = self.uclient
+        parent = self.parent
 
         for (addr, val) in TRIGGER_SETUP_SEQ:
             if addr is None:
@@ -35,7 +36,7 @@ class ChannelGeRMAcquireUDP(ca.ChannelData):
 
         # expect this to come back as a length 1 list with
         # a Bytes object in it
-        write_path, = self.parent.filepath_channel.value
+        write_path, = parent.filepath_channel.value
 
         await uc.ctrl_sock.send(write_path)
         resp = await uc.ctrl_sock.recv()
@@ -49,20 +50,20 @@ class ChannelGeRMAcquireUDP(ca.ChannelData):
 
         await uc.ctrl_sock.send(b'ack')
         written_file = await uc.ctrl_sock.recv()
-        await self.parent.last_file_channel.write_from_dbr(
+        await parent.last_file_channel.write_from_dbr(
             [written_file], ca.ChannelType.STRING, None)
 
         await zc.write(*STOP_DAQ)
         fr_num, ev_count, overfill = struct.unpack('QQQ', payload)
 
-        await self.parent.last_frame_channel.write_from_dbr(
+        await parent.last_frame_channel.write_from_dbr(
             [fr_num], ca.ChannelType.INT, None)
-        await self.parent.overfill_channel.write_from_dbr(
+        await parent.overfill_channel.write_from_dbr(
             [overfill], ca.ChannelType.INT, None)
-        await self.parent.count_channel.write_from_dbr(
+        await parent.count_channel.write_from_dbr(
             [ev_count], ca.ChannelType.INT, None)
 
-        fs = self.parent._fs
+        fs = parent._fs
         res = fs.register_resource('BinaryGeRM', '/',
                                    written_file.decode(),
                                    {})
@@ -76,7 +77,7 @@ class ChannelGeRMAcquireUDP(ca.ChannelData):
             print(f'short: {short}')
             chan_name = f'uid_{short}_channel'
             print(f'chan_name: {chan_name}')
-            chan = getattr(self.parent, chan_name)
+            chan = getattr(parent, chan_name)
             print(f'chan: {chan}')
             dset_uid = str(uuid.uuid4())
             dset_uid = fs.register_datum(res, {'column': long_name})
