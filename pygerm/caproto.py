@@ -7,6 +7,8 @@ import time
 import curio
 import curio.zmq as zmq
 import struct
+import traceback
+
 from .client import DATA_TYPES
 from .client.curio_zmq import ZClientCurio, ZClientCurioBase, UClientCurio
 from . import TRIGGER_SETUP_SEQ, START_DAQ, STOP_DAQ
@@ -20,8 +22,18 @@ class ChannelGeRMAcquireUDP(ca.ChannelData):
         self.parent = parent
 
     async def write_from_dbr(self, data, data_type, metadata):
+        if self.alarm.status or self.alarm.severity:
+            print(f'{self.alarm} {self.alarm.status} {self.alarm.severity})')
+            await self.alarm.write(status=0, severity=0)
         await super().write_from_dbr(data, data_type, metadata)
-        await self.trigger_frame()
+        if data:
+            try:
+                await self.trigger_frame()
+            except Exception:
+                traceback.print_exc()
+                await self.alarm.write(status=2, severity=2)
+            finally:
+                await super().write_from_dbr(0, data_type, None)
 
     async def trigger_frame(self):
         def _path_channel_to_Path(chanel, string_encoding='latin-1'):
