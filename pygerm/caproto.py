@@ -2,10 +2,12 @@ import numpy as np
 import h5py
 from pathlib import Path
 import caproto as ca
+from concurrent.futures import ThreadPoolExecutor
 import uuid
 import time
 import curio
 import curio.zmq as zmq
+import shutil
 import struct
 import traceback
 
@@ -20,6 +22,7 @@ class ChannelGeRMAcquireUDP(ca.ChannelData):
         self.zclient = zclient
         self.uclient = uclient
         self.parent = parent
+        self.file_copy_executor = ThreadPoolExecutor(max_workers=2)
 
     async def write_from_dbr(self, data, data_type, metadata):
         if self.alarm.status or self.alarm.severity:
@@ -56,6 +59,8 @@ class ChannelGeRMAcquireUDP(ca.ChannelData):
         write_path = _path_channel_to_Path(parent.filepath_channel)
         write_root = _path_channel_to_Path(parent.writeroot_channel)
         read_root = _path_channel_to_Path(parent.readroot_channel)
+        src_mount = _path_channel_to_Path(parent.srcmount_channel)
+        dest_mount = _path_channel_to_Path(parent.destmount_channel)
 
         if write_path.is_absolute():
             raise Exception("write path must be not absolute")
@@ -65,6 +70,12 @@ class ChannelGeRMAcquireUDP(ca.ChannelData):
 
         if not read_root.is_absolute():
             raise Exception("read root must be absolute")
+
+        if not src_mount.is_absolute():
+            raise Exception("src mount point must be absolute")
+
+        if not dest_mount.is_absolute():
+            raise Exception("destination mount point must be absolute")
 
         await uc.ctrl_sock.send(str(write_root / write_path).encode('latin-1'))
         resp = await uc.ctrl_sock.recv()
@@ -92,12 +103,20 @@ class ChannelGeRMAcquireUDP(ca.ChannelData):
         await parent.count_channel.write_from_dbr(
             [ev_count], ca.ChannelType.INT, None)
 
+        relative_filename = written_path.relative_to(write_root)
         fs = parent._fs
         res = fs.register_resource(
             'BinaryGeRM',
             root=str(read_root),
-            rpath=str(written_path.relative_to(write_root)),
+            rpath=str(relative_filename),
             rkwargs={})
+
+        src_filename = src_mount / relative_filename
+        dest_filename = dest_mount / relative_filename
+
+        cp_stat = self.file_copy_executor.submit(shutil.copy,  # noqa: F841
+                                                 str(src_filename),
+                                                 str(dest_filename))
 
         for short, long_name in (
                 ('chip', 'chip'),
@@ -279,6 +298,12 @@ class GeRMIOCUDPData(GeRMIOCBase):
             value=b'/', string_encoding='latin-1')
 
         self.writeroot_channel = ca.ChannelString(
+            value=b'/', string_encoding='latin-1')
+
+        self.srcmount_channel = ca.ChannelString(
+            value=b'/', string_encoding='latin-1')
+
+        self.destmount_channel = ca.ChannelString(
             value=b'/', string_encoding='latin-1')
 
 

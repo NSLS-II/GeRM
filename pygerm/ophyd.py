@@ -47,3 +47,5 @@ class GeRM(Device):
 class GeRMUDP(GeRM):
     write_root = Cpt(EpicsSignal, ':write_root', put_complete=True)
     read_root = Cpt(EpicsSignal, ':read_root', put_complete=True)
+    src_mount = Cpt(EpicsSignal, ':src_mount', put_complete=True)
+    dest_mount = Cpt(EpicsSignal, ':dest_mount', put_complete=True)
