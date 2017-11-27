@@ -22,7 +22,7 @@ class ChannelGeRMAcquireUDP(ca.ChannelData):
         self.zclient = zclient
         self.uclient = uclient
         self.parent = parent
-        self.file_copy_executore = ThreadPoolExecutor(max_workers=2)
+        self.file_copy_executor = ThreadPoolExecutor(max_workers=2)
 
     async def write_from_dbr(self, data, data_type, metadata):
         if self.alarm.status or self.alarm.severity:
