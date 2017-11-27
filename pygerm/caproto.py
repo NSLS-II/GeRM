@@ -24,6 +24,13 @@ class ChannelGeRMAcquireUDP(ca.ChannelData):
         await self.trigger_frame()
 
     async def trigger_frame(self):
+        def _path_channel_to_Path(chanel, string_encoding='latin-1'):
+            # expect this to come back as a length 1 list with
+            # a Bytes object in it
+            v, = chanel.value
+            v = v.decode(string_encoding)
+            return Path(v)
+
         zc = self.zclient
         uc = self.uclient
         parent = self.parent
@@ -34,15 +41,24 @@ class ChannelGeRMAcquireUDP(ca.ChannelData):
             else:
                 await zc.write(addr, val)
 
-        # expect this to come back as a length 1 list with
-        # a Bytes object in it
-        write_path, = parent.filepath_channel.value
+        write_path = _path_channel_to_Path(parent.filepath_channel)
+        write_root = _path_channel_to_Path(parent.writeroot_channel)
+        read_root = _path_channel_to_Path(parent.readroot_channel)
 
-        await uc.ctrl_sock.send(write_path)
+        if write_path.is_absolute():
+            raise Exception("write path must be not absolute")
+
+        if not write_root.is_absolute():
+            raise Exception("write root must be absolute")
+
+        if not read_root.is_absolute():
+            raise Exception("read root must be absolute")
+
+        await uc.ctrl_sock.send(str(write_root / write_path).encode('latin-1'))
         resp = await uc.ctrl_sock.recv()
         if resp != b'Received Filename':
             print("DANGER WILL ROBINSON")
-            return
+            raise Exception("did not get expected handshake from collctor")
 
         await zc.write(*START_DAQ)
         await uc.ctrl_sock.send(b'ack')
@@ -50,6 +66,7 @@ class ChannelGeRMAcquireUDP(ca.ChannelData):
 
         await uc.ctrl_sock.send(b'ack')
         written_file = await uc.ctrl_sock.recv()
+        written_path = Path(written_file.decode())
         await parent.last_file_channel.write_from_dbr(
             [written_file], ca.ChannelType.STRING, None)
 
@@ -64,9 +81,11 @@ class ChannelGeRMAcquireUDP(ca.ChannelData):
             [ev_count], ca.ChannelType.INT, None)
 
         fs = parent._fs
-        res = fs.register_resource('BinaryGeRM', '/',
-                                   written_file.decode(),
-                                   {})
+        res = fs.register_resource(
+            'BinaryGeRM',
+            root=str(read_root),
+            rpath=str(written_path.relative_to(write_root)),
+            rkwargs={})
 
         for short, long_name in (
                 ('chip', 'chip'),
@@ -243,6 +262,12 @@ class GeRMIOCUDPData(GeRMIOCBase):
         self.acquire_channel = ChannelGeRMAcquireUDP(
             value=0, zclient=self.zclient, uclient=self.udp_client,
             parent=self)
+
+        self.readroot_channel = ca.ChannelString(
+            value=b'/', string_encoding='latin-1')
+
+        self.writeroot_channel = ca.ChannelString(
+            value=b'/', string_encoding='latin-1')
 
 
 async def runner(germ):

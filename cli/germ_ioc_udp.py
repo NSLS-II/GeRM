@@ -11,13 +11,17 @@ def create_server(zync_url, udp_url, fs):
     germ = GeRMIOCUDPData(zync_url, udp_url, fs)
     pvdb = {f'{prefix}:acquire': germ.acquire_channel,
             f'{prefix}:frametime': germ.frametime_channel,
+
             f'{prefix}:filepath': germ.filepath_channel,
+            f'{prefix}:read_root': germ.readroot_channel,
+            f'{prefix}:write_root': germ.writeroot_channel,
+
             f'{prefix}:last_file': germ.last_file_channel,
 
             f'{prefix}:overfill': germ.overfill_channel,
             f'{prefix}:last_frame': germ.last_frame_channel,
-
             f'{prefix}:COUNT': germ.count_channel,
+
             f'{prefix}:UUID:CHIP': germ.uid_chip_channel,
             f'{prefix}:UUID:CHAN': germ.uid_chan_channel,
             f'{prefix}:UUID:TD': germ.uid_td_channel,
