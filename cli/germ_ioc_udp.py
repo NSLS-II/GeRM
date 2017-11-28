@@ -8,7 +8,7 @@ prefix = 'XF:28IDC-ES:1{Det:GeRM1}'
 
 
 def create_server(zync_url, udp_url, reg):
-    germ = GeRMIOCUDPData(zync_url, udp_url, fs)
+    germ = GeRMIOCUDPData(zync_url, udp_url, reg)
     pvdb = {f'{prefix}:acquire': germ.acquire_channel,
             f'{prefix}:frametime': germ.frametime_channel,
 
