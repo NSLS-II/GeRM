@@ -1,7 +1,7 @@
 import curio.zmq as zmq
 from caproto.curio.server import Context, find_next_tcp_port
 from pygerm.caproto import GeRMIOCUDPData
-# from databroker.assets.sqlite import Registry
+from databroker.assets.sqlite import Registry
 import argparse
 
 prefix = 'XF:28IDC-ES:1{Det:GeRM1}'
@@ -51,6 +51,9 @@ if __name__ == '__main__':
     from databroker import Broker
     db = Broker.named('xpd')
     reg = db.reg
+    #from databroker.assets.sqlite import Registry
+    #print("starting sqlite fs:")
+    #reg = Registry({'dbpath': '/tmp/fs.sqlite'})
 
     ctx, germ = create_server(f'tcp://{zync_ip}', f'tcp://{collector_ip}', reg)
 
