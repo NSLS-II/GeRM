@@ -76,3 +76,28 @@ or a counts per channel histogram::
   channel_counts = make_mars_line(h):
   fig, ax = plt.subplots()
   plt.plot(channel_counts)
+
+
+Running
+-------
+
+.. code-block:: bash
+		
+   source activate germ_ioc
+   python cli/germ_ioc_udp.py 10.28.0.48 10.28.0.210
+		
+
+may need to resart if handshaking with collector gets out of sync
+
+User interface
+--------------
+
+Editor
+
+.. code-block:: bash
+
+   PYQTDESIGNERPATH=/home/xf28id1/src/pydm:$PYQTDESIGNERPATH designer
+
+.. code-block:: bash
+
+   pydm germdm/main.ui
