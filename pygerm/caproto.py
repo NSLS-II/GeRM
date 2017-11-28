@@ -114,6 +114,7 @@ class ChannelGeRMAcquireUDP(ca.ChannelData):
         src_filename = src_mount / relative_filename
         dest_filename = dest_mount / relative_filename
 
+        print(f"Copying from file {str(src_filename)} to {str(dest_filename)}")
         cp_stat = self.file_copy_executor.submit(shutil.copy,  # noqa: F841
                                                  str(src_filename),
                                                  str(dest_filename))
