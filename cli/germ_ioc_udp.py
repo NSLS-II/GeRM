@@ -1,7 +1,7 @@
 import curio.zmq as zmq
 from caproto.curio.server import Context, find_next_tcp_port
 from pygerm.caproto import GeRMIOCUDPData
-from databroker.assets.sqlite import Registry
+# from databroker.assets.sqlite import Registry
 import argparse
 
 prefix = 'XF:28IDC-ES:1{Det:GeRM1}'
@@ -46,7 +46,30 @@ if __name__ == '__main__':
     zync_ip = args.zync_host
     collector_ip = args.collector_host
 
-    fs = Registry({'dbpath': '/tmp/fs.sqlite'})
+    # from metadataclient.mds import MDS
+    from databroker import Broker
+    from databroker.core import register_builtin_handlers
+    from filestore.fs import FileStore
+
+    # hard coded the registry from 00-startup.py
+    # TODO : use broker.named...
+    # fs = Registry({'dbpath': '/tmp/fs.sqlite'})
+    _mds_config = {'host': 'xf28id-ca1.cs.nsls2.local',
+                   'database': 'datastore',
+                   'port': 27017,
+                   'timezone': 'US/Eastern'}
+    _fs_config = {'host': 'xf28id-ca1.cs.nsls2.local',
+                   'database': 'filestore',
+                   'port': 27017}
+
+
+    mds = MDS(_mds_config, auth=False)
+    # mds = MDS({'host': CA, 'port': 7770})
+
+    # pull configuration from /etc/filestore/connection.yaml
+    db = Broker(mds, FileStore(_fs_config))
+    fs = db.fs
+
     ctx, germ = create_server(f'tcp://{zync_ip}', f'tcp://{collector_ip}', fs)
 
     async def runner():
