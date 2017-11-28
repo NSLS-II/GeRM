@@ -46,6 +46,7 @@ if __name__ == '__main__':
     zync_ip = args.zync_host
     collector_ip = args.collector_host
 
+    print("Starting the ioc for the GeRM detector")
     # from metadataclient.mds import MDS
     from databroker import Broker
     db = Broker.named('xpd')
@@ -53,6 +54,7 @@ if __name__ == '__main__':
 
     ctx, germ = create_server(f'tcp://{zync_ip}', f'tcp://{collector_ip}', reg)
 
+    print("Done. Running...")
     async def runner():
         await ctx.run()
 
