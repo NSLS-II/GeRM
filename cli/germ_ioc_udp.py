@@ -7,7 +7,7 @@ import argparse
 prefix = 'XF:28IDC-ES:1{Det:GeRM1}'
 
 
-def create_server(zync_url, udp_url, fs):
+def create_server(zync_url, udp_url, reg):
     germ = GeRMIOCUDPData(zync_url, udp_url, fs)
     pvdb = {f'{prefix}:acquire': germ.acquire_channel,
             f'{prefix}:frametime': germ.frametime_channel,
@@ -48,29 +48,10 @@ if __name__ == '__main__':
 
     # from metadataclient.mds import MDS
     from databroker import Broker
-    from databroker.core import register_builtin_handlers
-    from filestore.fs import FileStore
+    db = Broker.named('xpd')
+    reg = db.reg
 
-    # hard coded the registry from 00-startup.py
-    # TODO : use broker.named...
-    # fs = Registry({'dbpath': '/tmp/fs.sqlite'})
-    _mds_config = {'host': 'xf28id-ca1.cs.nsls2.local',
-                   'database': 'datastore',
-                   'port': 27017,
-                   'timezone': 'US/Eastern'}
-    _fs_config = {'host': 'xf28id-ca1.cs.nsls2.local',
-                   'database': 'filestore',
-                   'port': 27017}
-
-
-    mds = MDS(_mds_config, auth=False)
-    # mds = MDS({'host': CA, 'port': 7770})
-
-    # pull configuration from /etc/filestore/connection.yaml
-    db = Broker(mds, FileStore(_fs_config))
-    fs = db.fs
-
-    ctx, germ = create_server(f'tcp://{zync_ip}', f'tcp://{collector_ip}', fs)
+    ctx, germ = create_server(f'tcp://{zync_ip}', f'tcp://{collector_ip}', reg)
 
     async def runner():
         await ctx.run()
