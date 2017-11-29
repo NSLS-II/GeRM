@@ -10,6 +10,8 @@ import curio.zmq as zmq
 import shutil
 import struct
 import traceback
+import os
+import datetime
 
 from .client import DATA_TYPES
 from .client.curio_zmq import ZClientCurio, ZClientCurioBase, UClientCurio
@@ -56,11 +58,19 @@ class ChannelGeRMAcquireUDP(ca.ChannelData):
             else:
                 await zc.write(addr, val)
 
-        #write_path = _path_channel_to_Path(parent.filepath_channel)
+
+        filepath = _path_channel_to_Path(parent.filepath_channel)
         write_root = _path_channel_to_Path(parent.writeroot_channel)
         read_root = _path_channel_to_Path(parent.readroot_channel)
         src_mount = _path_channel_to_Path(parent.srcmount_channel)
         dest_mount = _path_channel_to_Path(parent.destmount_channel)
+
+        # TODO : change filepath to pv name
+        # TODO : put this in trigger and uncomment the write_subdir
+        now = datetime.datetime.now()
+        write_subdir = Path(f"{now.year}/{now.month}/{now.day}")
+        write_subdir = filepath / write_subdir
+        #parent.filepath_channel.write(str(write_subdir))
 
         #if write_path.is_absolute():
             #raise Exception("write path must be not absolute")
@@ -89,7 +99,11 @@ class ChannelGeRMAcquireUDP(ca.ChannelData):
 
         await uc.ctrl_sock.send(b'ack')
         written_file = await uc.ctrl_sock.recv()
+        # now need to add correct path given by filepath
         written_path = Path(written_file.decode())
+        
+        # last file is last file on local server
+        # TODO : change to server file is copied to?
         await parent.last_file_channel.write_from_dbr(
             [written_file], ca.ChannelType.STRING, None)
 
@@ -103,17 +117,29 @@ class ChannelGeRMAcquireUDP(ca.ChannelData):
         await parent.count_channel.write_from_dbr(
             [ev_count], ca.ChannelType.INT, None)
 
+        # now use written_path (filename of file on local udp server)
+        # to construct the resource kwargs for filestore
+        # remove the write_root
         relative_filename = written_path.relative_to(write_root)
+        # now add the base subdir
+        write_filename = write_subdir / relative_filename
         fs = parent._fs
         res = fs.register_resource(
             'BinaryGeRM',
             root=str(read_root),
-            rpath=str(relative_filename),
+            rpath=str(write_filename),
             rkwargs={})
 
+        # relative filename needs to be filename on local server
         src_filename = src_mount / relative_filename
-        dest_filename = dest_mount / relative_filename
+        # write_filename is the desired filepath with relative path added from filepath
+        dest_filename = dest_mount / write_filename
 
+        # check if directory exists, if not make it
+        directory = os.path.dirname(dest_filename)
+        if not os.path.isdir(directory):
+            print(f"directory does not exist, making {directory}")
+            os.makedirs(directory)
 
         print(f"Copying from file {str(src_filename)} to {str(dest_filename)}")
         cp_stat = self.file_copy_executor.submit(shutil.copy,  # noqa: F841
@@ -307,6 +333,12 @@ class GeRMIOCUDPData(GeRMIOCBase):
 
         self.destmount_channel = ca.ChannelString(
             value=b'/', string_encoding='latin-1')
+
+    def stage(self, *args, **kwargs):
+        print("staging")
+        super().stage(*args, **kwargs)
+        now = datetime.datetime.now()
+        self.filepath_channel.put(f"{now.year}/{now.month}/{now.day}")
 
 
 async def runner(germ):

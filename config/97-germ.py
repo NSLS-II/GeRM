@@ -48,7 +48,7 @@ germ.write_root.put("/tmp")
 germ.read_root.put("/XF28IDC/XF28ID1")
 germ.src_mount.put("/mnt/tmp")
 germ.dest_mount.put("/XF28IDC/XF28ID1")
-germ.filepath.put("pe1_data/GeRM/test")
+germ.filepath.put("pe1_data/GeRM")
 
 # gaussian fit
 
