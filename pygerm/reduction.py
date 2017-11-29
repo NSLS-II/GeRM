@@ -1,5 +1,9 @@
 import pandas as pd
 import numpy as np
+import skimage
+from skimage.filters import threshold_otsu
+from skimage.transform import (hough_line, hough_line_peaks,
+                               probabilistic_hough_line)
 
 
 def bin_frame(data, bins, corr_mat=None):
@@ -105,8 +109,21 @@ def sum_diffraction(diff_list, detector_angles, angle_bins, *,
                        (np.arange(384) - 192) * pixel_scale +
                        pixel_offset)
 
-        out += np.histogram(line_angles, weights=line)
+        out += np.histogram(line_angles, weights=line, bins=angle_bins)[0]
+        norm += np.histogram(line_angles, bins=angle_bins)[0]
 
     # TODO suppress divide by 0 warnings
 
     return out / norm, angle_bins
+
+
+def calibrate_detector():
+    # WIP
+    otsu = threshold_otsu(peaks)
+    filter_peaks = peaks > otsu
+    h, theta, d = hough_line(filter_peaks)
+    hough_line_peaks(h, theta, d)
+    for _, angle, dist in zip(*hough_line_peaks(h, theta, d)):
+        y0 = (dist - 0 * np.cos(angle)) / np.sin(angle)
+    y1 = (dist - filter_peaks.shape[1] * np.cos(angle)) / np.sin(angle)    
+    pixel_scale = np.mean(np.diff(angles))*(y0-y1) / filter_peaks.shape[1]
