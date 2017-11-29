@@ -10,7 +10,7 @@ def run_germ(exposure=None, N=2):
     '''
     # set frame time to 30 min
     if exposure is not None:
-        germ.frametime.put(exposure)
-    for i in tqdm(range(N)):
-        yield from bp.count([germ])
+        yield from bp.mv(germ.frametime, exposure)
+
+    yield from bp.count([germ], num=N)
 
