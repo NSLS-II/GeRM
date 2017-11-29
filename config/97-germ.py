@@ -61,7 +61,9 @@ def linear(x, a, b):
     return a*x+b
 
 
-def fit_all_channels(data):
+def fit_all_channels(data, plot=True):
+    if plot:
+        fig, ax = plt.subplots()
     gauss_mod1 = Model(gaussian, prefix='g1_')
     gauss_mod2 = Model(gaussian, prefix='g2_')
     gauss_mod3 = Model(gaussian, prefix='g3_')
@@ -86,6 +88,14 @@ def fit_all_channels(data):
         g1_cen_list.append(result.values['g1_center'])
         g2_cen_list.append(result.values['g2_center'])
         g3_cen_list.append(result.values['g3_center'])
+        if plot:
+            ax.cla()
+            ax.plot(result.data, color='k', label="data")
+            ax.plot(result.best_fit, color='r', label="fit")
+            ax.legend()
+            fig.canvas.draw_idle()
+            plt.pause(.00001)
+
     return g1_cen_list, g2_cen_list, g3_cen_list
 
 
@@ -254,6 +264,11 @@ def track_peaks(h, bin_num=3000):
 # _cal_file = Path(os.path.realpath(__file__)).parent / 'calibration_matrix_20170720.txt'
 _cal_file = Path(os.path.realpath(__file__)).parent / 'calibration_matrix_20171129.txt'
 cal_val = np.loadtxt(str(_cal_file))
+
+# calibration data uid
+cal_uid = "71b97506-7123-4af3-8d30-c566af324f95"
+#res= fit_all_channels(im)
+
 
 # How to take a count
 # http://nsls-ii.github.io/bluesky/plans_intro.html
