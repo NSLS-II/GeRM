@@ -43,6 +43,12 @@ germ = GeRMUDP('XF:28IDC-ES:1{Det:GeRM1}', name='germ',
                configuration_attrs=['frametime', 'write_root',
                                     'read_root', 'filepath'])
 
+#/XF28IDC/XF28ID1/pe1_data/
+germ.write_root.put("/tmp")
+germ.read_root.put("/XF28IDC/XF28ID1")
+germ.src_mount.put("/mnt/tmp")
+germ.dest_mount.put("/XF28IDC/XF28ID1")
+germ.filepath.put("pe1_data/GeRM/test")
 
 # gaussian fit
 

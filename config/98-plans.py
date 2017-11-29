@@ -1,3 +1,5 @@
+from tqdm import tqdm
+
 
 def run_germ(exposure=None, N=2):
     ''' run count scans
@@ -9,5 +11,6 @@ def run_germ(exposure=None, N=2):
     # set frame time to 30 min
     if exposure is not None:
         germ.frametime.put(exposure)
-    for i in range(N):
+    for i in tqdm(range(N)):
         yield from bp.count([germ])
+

@@ -56,14 +56,14 @@ class ChannelGeRMAcquireUDP(ca.ChannelData):
             else:
                 await zc.write(addr, val)
 
-        write_path = _path_channel_to_Path(parent.filepath_channel)
+        #write_path = _path_channel_to_Path(parent.filepath_channel)
         write_root = _path_channel_to_Path(parent.writeroot_channel)
         read_root = _path_channel_to_Path(parent.readroot_channel)
         src_mount = _path_channel_to_Path(parent.srcmount_channel)
         dest_mount = _path_channel_to_Path(parent.destmount_channel)
 
-        if write_path.is_absolute():
-            raise Exception("write path must be not absolute")
+        #if write_path.is_absolute():
+            #raise Exception("write path must be not absolute")
 
         if not write_root.is_absolute():
             raise Exception("write root must be absolute")
@@ -77,7 +77,7 @@ class ChannelGeRMAcquireUDP(ca.ChannelData):
         if not dest_mount.is_absolute():
             raise Exception("destination mount point must be absolute")
 
-        await uc.ctrl_sock.send(str(write_root / write_path).encode('latin-1'))
+        await uc.ctrl_sock.send(str(write_root / str(uuid.uuid4())).encode('latin-1'))
         resp = await uc.ctrl_sock.recv()
         if resp != b'Received Filename':
             print("DANGER WILL ROBINSON")
@@ -113,6 +113,7 @@ class ChannelGeRMAcquireUDP(ca.ChannelData):
 
         src_filename = src_mount / relative_filename
         dest_filename = dest_mount / relative_filename
+
 
         print(f"Copying from file {str(src_filename)} to {str(dest_filename)}")
         cp_stat = self.file_copy_executor.submit(shutil.copy,  # noqa: F841
