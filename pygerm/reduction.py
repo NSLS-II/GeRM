@@ -122,8 +122,10 @@ def calibrate_detector():
     otsu = threshold_otsu(peaks)
     filter_peaks = peaks > otsu
     h, theta, d = hough_line(filter_peaks)
-    hough_line_peaks(h, theta, d)
-    for _, angle, dist in zip(*hough_line_peaks(h, theta, d)):
-        y0 = (dist - 0 * np.cos(angle)) / np.sin(angle)
+    hpeaks =  hough_line_peaks(h, theta, d)
+    _, angle, dist = hough_line_peaks(h, theta, d)
+    y0 = (dist - 0 * np.cos(angle)) / np.sin(angle)
     y1 = (dist - filter_peaks.shape[1] * np.cos(angle)) / np.sin(angle)    
+
     pixel_scale = np.mean(np.diff(angles))*(y0-y1) / filter_peaks.shape[1]
+    return pixel_scale
