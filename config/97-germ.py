@@ -62,6 +62,10 @@ def linear(x, a, b):
 
 
 def fit_all_channels(data, plot=True):
+    '''
+        This fits the 2D binned data and fits each column to three peaks.
+        This returns the positions of the peaks in the array (not energy specific)
+    '''
     if plot:
         fig, ax = plt.subplots()
     gauss_mod1 = Model(gaussian, prefix='g1_')
@@ -101,6 +105,17 @@ def fit_all_channels(data, plot=True):
 
 def get_calibration_value(cen_data, y):
     """Linear regression to calculate calibration based on bin center and energy value.
+        Assumes data comes from the fit run on mars_heatmap code for three peaks.
+
+        The three peaks should be the molydenum k-alpha, kbeta and Americium
+        peak (at 60keV or so).
+        The americium emits at 60keV and excites the molybdenum, which then emits
+            at the k-alpha and k-beta lines.
+
+        Energies:
+            americium : 59.5 keV
+            Mo K-alpha : 17.4 keV
+            Mo K-beta : 19.6 keV
 
     Parameters
     ----------
@@ -267,10 +282,26 @@ cal_val = np.loadtxt(str(_cal_file))
 
 # calibration data uid
 cal_uid = "71b97506-7123-4af3-8d30-c566af324f95"
-#hdr = db[cal_uid]
-#im = make_mars_heatmap(hdr)
-#cens = fit_all_channels(im, plot=True)
+def run_cal():
+    ''' test function to run calibration.
+        meant to be a template to work on.
 
+        Example:
+            cal_mat = run_cal()
+            # plot result (also returns the heat map)
+            res = plot_all_chan_spectrum(hdr,corr_mat=cal_mat2)
+            # the binned data
+            im = res[0]
+    '''
+    hdr = db[cal_uid]
+    im = make_mars_heatmap(hdr)
+    cens = fit_all_channels(im, plot=True)
+    # change to numpy array for function
+    cens = np.array(cens)
+    # energies of the peaks in keV
+    energies = np.array([17.4, 19.6, 59.5])
+    cal_mat2 = get_calibration_value(cens, energies)
+    return cal_mat2
 
 
 # How to take a count
