@@ -251,7 +251,8 @@ def track_peaks(h, bin_num=3000):
 
     
 
-_cal_file = Path(os.path.realpath(__file__)).parent / 'calibration_martix.txt'
+# _cal_file = Path(os.path.realpath(__file__)).parent / 'calibration_matrix_20170720.txt'
+_cal_file = Path(os.path.realpath(__file__)).parent / 'calibration_matrix_20171129.txt'
 cal_val = np.loadtxt(str(_cal_file))
 
 # How to take a count
