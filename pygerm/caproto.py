@@ -59,6 +59,13 @@ class ChannelGeRMAcquireUDP(ca.ChannelData):
                 await zc.write(addr, val)
 
 
+        # not needed (overwritten later)
+        datepath = _path_channel_to_Path(parent.datepath_channel)
+        print(f'awaiting to write {datepath}')
+        await parent.datepath_channel.write_from_dbr(
+            [datepath], ca.ChannelType.INT, None)
+        print('done')
+
         filepath = _path_channel_to_Path(parent.filepath_channel)
         write_root = _path_channel_to_Path(parent.writeroot_channel)
         read_root = _path_channel_to_Path(parent.readroot_channel)
@@ -68,8 +75,8 @@ class ChannelGeRMAcquireUDP(ca.ChannelData):
         # TODO : change filepath to pv name
         # TODO : put this in trigger and uncomment the write_subdir
         now = datetime.datetime.now()
-        write_subdir = Path(f"{now.year}/{now.month}/{now.day}")
-        write_subdir = filepath / write_subdir
+        date_subdir = Path(f"{now.year}/{now.month}/{now.day}")
+        write_subdir = filepath / date_subdir
         #parent.filepath_channel.write(str(write_subdir))
 
         #if write_path.is_absolute():
@@ -334,11 +341,8 @@ class GeRMIOCUDPData(GeRMIOCBase):
         self.destmount_channel = ca.ChannelString(
             value=b'/', string_encoding='latin-1')
 
-    def stage(self, *args, **kwargs):
-        print("staging")
-        super().stage(*args, **kwargs)
-        now = datetime.datetime.now()
-        self.filepath_channel.put(f"{now.year}/{now.month}/{now.day}")
+        self.datepath_channel = ca.ChannelString(
+            value=b'/', string_encoding='latin-1')
 
 
 async def runner(germ):

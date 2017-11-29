@@ -25,6 +25,10 @@ class GeRM(Device):
     filepath = Cpt(EpicsSignal, ':filepath',
                    string=True, put_complete=True)
 
+    # extra date subdirectories (overwritten by the detector each trigger)
+    datepath = Cpt(EpicsSignal, ':datepath',
+                   string=True, put_complete=True)
+
     # where the last file was written
     last_file = Cpt(EpicsSignalRO, ':last_file', string=True)
 
