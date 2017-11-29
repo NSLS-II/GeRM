@@ -267,7 +267,10 @@ cal_val = np.loadtxt(str(_cal_file))
 
 # calibration data uid
 cal_uid = "71b97506-7123-4af3-8d30-c566af324f95"
-#res= fit_all_channels(im)
+#hdr = db[cal_uid]
+#im = make_mars_heatmap(hdr)
+#cens = fit_all_channels(im, plot=True)
+
 
 
 # How to take a count
