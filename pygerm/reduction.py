@@ -127,7 +127,6 @@ def calibrate_detector(peaks, angles, thresh=None):
     filter_peaks = peaks > otsu
 
     h, theta, d = hough_line(filter_peaks)
-    hpeaks = hough_line_peaks(h, theta, d)
     fig, ax = plt.subplots()
     fig2, ax2 = plt.subplots()
     ax.imshow(peaks, aspect='auto', origin='lower')
