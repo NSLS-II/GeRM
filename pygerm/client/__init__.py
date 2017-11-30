@@ -1,6 +1,11 @@
 import numpy as np
 from collections import OrderedDict
 
+CHIP_BITMASK = 0xf
+CHAN_BITMASK = 0x1f
+TD_BITMASK = 0x1ff
+TS_BITMASK = 0x7ffffff
+PD_BITMASK = 0xfff
 
 def payload2event(data):
     '''Split up the raw data coming over the socket.
@@ -20,17 +25,17 @@ def payload2event(data):
     word2 = data[1::2]
 
     # chip addr
-    chip = word1 >> 27 & 0xf
+    chip = word1 >> 27 & CHIP_BITMASK
     # chan addr
-    chan = word1 >> 22 & 0x1f
+    chan = word1 >> 22 & CHAN_BITMASK
     # fine ts
-    td = word1 >> 12 & 0x3ff
+    td = word1 >> 12 & TD_BITMASK
 
     # evergy readings
-    pd = word1 & 0xfff
+    pd = word1 & PD_BITMASK
 
     # FPGA tick
-    ts = word2 & 0x7ffffff
+    ts = word2 & TS_BITMASK
 
     return chip, chan, td, pd, ts
 
@@ -58,11 +63,11 @@ def event2payload(chip, chan, td, pd, ts):
     # word1 = data[::2]
     # word2 = data[1::2]
     # for word 1
-    payload[::2] = ((chip & 0xf) << 27) + ((chan & 0x1f) << 22) + \
-        ((td & 0x3ff) << 12) + (pd & 0xfff)
+    payload[::2] = ((chip & CHIP_BITMASK) << 27) + ((chan & CHAN_BITMASK) << 22) + \
+        ((td & TD_BITMASK) << 12) + (pd & PD_BITMASK)
 
     # for word 2
-    payload[1::2] = (0x1 << 31) + (ts & 0x7ffffff)
+    payload[1::2] = (0x1 << 31) + (ts & TS_BITMASK)
 
     return payload
 

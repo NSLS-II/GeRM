@@ -117,15 +117,29 @@ def sum_diffraction(diff_list, detector_angles, angle_bins, *,
     return out / norm, angle_bins
 
 
-def calibrate_detector():
+def calibrate_detector(peaks, angles, thresh=None):
     # WIP
-    otsu = threshold_otsu(peaks)
+    if thresh is None:
+        otsu = threshold_otsu(peaks)
+    else:
+        otsu = thresh
+
     filter_peaks = peaks > otsu
+
     h, theta, d = hough_line(filter_peaks)
-    hpeaks =  hough_line_peaks(h, theta, d)
-    _, angle, dist = hough_line_peaks(h, theta, d)
-    y0 = (dist - 0 * np.cos(angle)) / np.sin(angle)
-    y1 = (dist - filter_peaks.shape[1] * np.cos(angle)) / np.sin(angle)    
+    hpeaks = hough_line_peaks(h, theta, d)
+    fig, ax = plt.subplots()
+    fig2, ax2 = plt.subplots()
+    ax.imshow(peaks, aspect='auto', origin='lower')
+    ax2.imshow(filter_peaks, aspect='auto', origin='lower',
+               extent=(-.5, 383.5, angles[0], angles[1]))
+
+    for _, angle, dist in zip(*hough_line_peaks(h, theta, d)):
+        y0 = (dist - 0 * np.cos(angle)) / np.sin(angle)
+        y1 = (dist - filter_peaks.shape[1] * np.cos(angle)) / np.sin(angle)
+        ax.plot((0, filter_peaks.shape[1]), (y0, y1), 'r')
+        ax2.plot((0, filter_peaks.shape[1]), (y0, y1), 'r')
 
     pixel_scale = np.mean(np.diff(angles))*(y0-y1) / filter_peaks.shape[1]
-    return pixel_scale
+
+    return dict(h=h, theta=theta, d=d, y0=y0, y1=y1, pixel_scale=pixel_scale)
