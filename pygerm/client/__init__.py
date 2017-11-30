@@ -4,7 +4,7 @@ from collections import OrderedDict
 CHIP_BITMASK = 0xf
 CHAN_BITMASK = 0x1f
 TD_BITMASK = 0x1ff
-TS_BITMASK = 0x7ffffff
+TS_BITMASK = 0x1fffffff
 PD_BITMASK = 0xfff
 
 def payload2event(data):
