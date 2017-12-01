@@ -24,7 +24,9 @@
 
 
 //event data buffer for a frame
-uint16_t evtdata[1000000000];
+//uint16_t evtdata[1000000000];
+size_t N = 5000000000;
+(uint16_t *) = malloc(2*N);
 //uint32_t evtdata[20000000];
 
 const char *GIGE_ERROR_STRING[] = { "",
