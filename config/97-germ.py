@@ -25,14 +25,16 @@ from lmfit import Model
 
 #mds = MDS({'directory': '/tmp/mds.sqlite', 'timezone': 'US/Eastern'})
 #db = Broker(mds, reg=reg)
+# comment these out if running at xpd (since other )
 db = Broker.named("xpd")
+RE = bs.RunEngine()
+RE.subscribe(db.insert)
+
 reg = db.reg
 
 reg.register_handler('GeRM', GeRMHandler)
 reg.register_handler('BinaryGeRM', BinaryGeRMHandler)
 
-RE = bs.RunEngine()
-RE.subscribe(db.insert)
 
 
 # create the GeRM object
@@ -277,12 +279,18 @@ def track_peaks(h, bin_num=3000):
     
 
 # _cal_file = Path(os.path.realpath(__file__)).parent / 'calibration_matrix_20170720.txt'
+# _cal_file = Path(os.path.realpath(__file__)).parent / 'data/calibration_matrix_20170720.txt'
+# this had wrong energies
+#_cal_file = Path(os.path.realpath(__file__)).parent / 'data/calibration_matrix_20171129.txt'
+# this one calibrated with more precise energies
+# _cal_file = Path(os.path.realpath(__file__)).parent / 'data/calibration_matrix_20171129_2.txt'
 _cal_file = Path(os.path.realpath(__file__)).parent / 'calibration_matrix_20171129.txt'
+_cal_file = Path(os.path.realpath(__file__)).parent / 'data/calibration_matrix_20171130.txt'
 cal_val = np.loadtxt(str(_cal_file))
 
 # calibration data uid
-cal_uid = "71b97506-7123-4af3-8d30-c566af324f95"
-def run_cal():
+# cal_uid = "71b97506-7123-4af3-8d30-c566af324f95"
+def run_cal(cal_uid):
     ''' test function to run calibration.
         meant to be a template to work on.
 
@@ -303,6 +311,10 @@ def run_cal():
     cal_mat2 = get_calibration_value(cens, energies)
     return cal_mat2
 
+# Generate calibration matrix:
+# cal_val = run_cal('ea6f8286-e9e0-44da-9b30-7f433ea3319b')
+# cal_file = '/home/xf28id1/.ipython/profile_collection_germ/startup/data/calibration_matrix_20171130.txt'
+# np.savetxt(cal_file, cal_val)
 
 # How to take a count
 # http://nsls-ii.github.io/bluesky/plans_intro.html
