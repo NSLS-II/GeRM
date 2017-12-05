@@ -1,6 +1,7 @@
 from databroker.assets.handlers_base import HandlerBase
 import h5py
 import numpy as np
+import dask.array as da
 
 from .client import payload2event, DATA_TYPEMAP
 
@@ -22,28 +23,61 @@ class GeRMHandler(HandlerBase):
 class BinaryGeRMHandler(HandlerBase):
     specs = {'BinaryGeRM'}
 
-    def __init__(self, fpath):
-        # TODO : don't save the raw data (here for debugging)
-        raw_data = np.fromfile(fpath, dtype='>u4')
-        # TODO : when simulated data comes in, verify this is correct
-        # endianness and correct for it, don't just raise error
+    def __init__(self, fpath, chunksize=None):
+        ''' Binary GeRM handler.
+
+            Parameters
+            ----------
+            chunksize : int, optional
+                if specified, this turns result into a dask array
+                This array is a lazy loaded array. To obtain the results
+                one must call the .compute() method.
+                This is useful when the data is too large to fit in memory.
+
+            Notes
+            -----
+            When using chunksize, use functools.partial, and functools.wraps
+            Example:
+                from functools import partial, wraps
+                bgermdask = wraps(BinaryGeRMHandler)(partial(BinaryGeRMHandler,
+                                                             chunksize=100000))
+                fhandler_init = bgermdask(filename)
+                res = fhandler_init['germ_ts']
+                # etc...
+        '''
+        raw_data = np.memmap(fpath, dtype='>u4')
+
+        # now the raw_data is a dask array, lazy loaded
+        if chunksize is not None:
+            raw_data = da.from_array(raw_data, chunks=chunksize)
+
+        # verify the data
         first_word = raw_data[0]
+        last_word = raw_data[-1]
+        if chunksize is not None:
+            # if it's chunked data with dask array, compute
+            # since it is lazy
+            first_word = first_word.compute()
+            last_word = last_word.compute()
+
         if first_word != 0xfeedface:
             msg = "Error, first 32 bit word not 0xfeedface"
             msg += f"\n Got {first_word:#x} instead"
             raise ValueError(msg)
 
-        last_word = raw_data[-1]
         if last_word != 0xdecafbad:
             msg = "Error, first 32 bit word not 0xdecafbad"
             msg += f"\n Got {last_word:#x} instead"
             raise ValueError(msg)
 
         # remove first and last region
+        # if this is dask array, it's a lazy operation
         raw_data = raw_data[2:-2]
+        # this will work with lazy or non-lazy modes
         self.data = payload2event(raw_data)
 
     def __call__(self, column):
+        # NOTE: can return a lazy array
         return self.data[DATA_TYPEMAP[column]]
 
     def close(self):
