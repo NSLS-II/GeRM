@@ -58,7 +58,6 @@ class ChannelGeRMAcquireUDP(ca.ChannelData):
             else:
                 await zc.write(addr, val)
 
-
         filepath = _path_channel_to_Path(parent.filepath_channel)
         write_root = _path_channel_to_Path(parent.writeroot_channel)
         read_root = _path_channel_to_Path(parent.readroot_channel)
@@ -70,10 +69,10 @@ class ChannelGeRMAcquireUDP(ca.ChannelData):
         now = datetime.datetime.now()
         write_subdir = Path(f"{now.year}/{now.month}/{now.day}")
         write_subdir = filepath / write_subdir
-        #parent.filepath_channel.write(str(write_subdir))
+        # parent.filepath_channel.write(str(write_subdir))
 
-        #if write_path.is_absolute():
-            #raise Exception("write path must be not absolute")
+        # if write_path.is_absolute():
+        # raise Exception("write path must be not absolute")
 
         if not write_root.is_absolute():
             raise Exception("write root must be absolute")
@@ -87,7 +86,8 @@ class ChannelGeRMAcquireUDP(ca.ChannelData):
         if not dest_mount.is_absolute():
             raise Exception("destination mount point must be absolute")
 
-        await uc.ctrl_sock.send(str(write_root / str(uuid.uuid4())).encode('latin-1'))
+        await uc.ctrl_sock.send(str(write_root / str(uuid.uuid4()))
+                                .encode('latin-1'))
         resp = await uc.ctrl_sock.recv()
         if resp != b'Received Filename':
             print("DANGER WILL ROBINSON")
@@ -101,7 +101,7 @@ class ChannelGeRMAcquireUDP(ca.ChannelData):
         written_file = await uc.ctrl_sock.recv()
         # now need to add correct path given by filepath
         written_path = Path(written_file.decode())
-        
+
         # last file is last file on local server
         # TODO : change to server file is copied to?
         await parent.last_file_channel.write_from_dbr(
@@ -132,7 +132,8 @@ class ChannelGeRMAcquireUDP(ca.ChannelData):
 
         # relative filename needs to be filename on local server
         src_filename = src_mount / relative_filename
-        # write_filename is the desired filepath with relative path added from filepath
+        # write_filename is the desired filepath with relative path added from
+        # filepath
         dest_filename = dest_mount / write_filename
 
         # check if directory exists, if not make it
