@@ -72,7 +72,7 @@ class ChannelGeRMAcquireUDP(ca.ChannelData):
         # parent.filepath_channel.write(str(write_subdir))
 
         # if write_path.is_absolute():
-        #    raise Exception("write path must be not absolute")
+        # raise Exception("write path must be not absolute")
 
         if not write_root.is_absolute():
             raise Exception("write root must be absolute")
