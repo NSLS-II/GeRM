@@ -1,2 +1,2 @@
 make:
-	gcc germ_udpsrvr.c -lzmq -o udp_collector
+	gcc germ_udpsrvr.c -lzmq -o udp_collector -g
