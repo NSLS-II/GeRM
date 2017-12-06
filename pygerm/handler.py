@@ -62,7 +62,6 @@ class BinaryGeRMHandler(HandlerBase):
             raise ValueError(msg)
 
         # remove first and last region
-        # if this is dask array, it's a lazy operation
         raw_data = raw_data[2:-2]
 
         # now the raw_data is a dask array, lazy loaded
