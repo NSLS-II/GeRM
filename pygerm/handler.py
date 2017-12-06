@@ -47,7 +47,6 @@ class BinaryGeRMHandler(HandlerBase):
         '''
         raw_data = np.memmap(fpath, dtype='>u4')
 
-
         # verify the data
         first_word = raw_data[0]
         last_word = raw_data[-1]
