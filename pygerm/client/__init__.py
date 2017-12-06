@@ -64,9 +64,9 @@ def event2payload(chip, chan, td, pd, ts):
     # word1 = data[::2]
     # word2 = data[1::2]
     # for word 1
-    payload[::2] = ((chip & CHIP_BITMASK) << 27) + \
-                   ((chan & CHAN_BITMASK) << 22) + \
-                   ((td & TD_BITMASK) << 12) + (pd & PD_BITMASK)
+    payload[::2] = (((chip & CHIP_BITMASK) << 27) +
+                    ((chan & CHAN_BITMASK) << 22) +
+                    ((td & TD_BITMASK) << 12) + (pd & PD_BITMASK))
 
     # for word 2
     payload[1::2] = (0x1 << 31) + (ts & TS_BITMASK)
