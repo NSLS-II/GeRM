@@ -10,6 +10,7 @@ PD_BITMASK = 0xfff
 # number of channels for GeRM this is assumed to be global
 NCHANS = 32
 
+
 def payload2event(data):
     '''Split up the raw data coming over the socket.
 
@@ -64,8 +65,8 @@ def event2payload(pixel, td, pd, ts):
         Note that endianness matters only when this is sent to a buffer (file
         network etc)
     '''
-    chan = pixel%NCHANS
-    chip = pixel//NCHANS
+    chan = pixel % NCHANS
+    chip = pixel // NCHANS
     # insigned little-endian, default
     # 2 words of 32 bit per data
     payload = np.zeros(len(chip)*2, dtype='<u4')
@@ -73,8 +74,9 @@ def event2payload(pixel, td, pd, ts):
     # word1 = data[::2]
     # word2 = data[1::2]
     # for word 1
-    payload[::2] = ((chip & CHIP_BITMASK) << 27) + ((chan & CHAN_BITMASK) << 22) + \
-        ((td & TD_BITMASK) << 12) + (pd & PD_BITMASK)
+    payload[::2] = (((chip & CHIP_BITMASK) << 27) +
+                    ((chan & CHAN_BITMASK) << 22) +
+                    ((td & TD_BITMASK) << 12) + (pd & PD_BITMASK))
 
     # for word 2
     payload[1::2] = (0x1 << 31) + (ts & TS_BITMASK)

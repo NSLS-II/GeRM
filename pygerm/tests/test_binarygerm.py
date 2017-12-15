@@ -84,7 +84,7 @@ def test_binary_germ():
     handler = BinaryGeRMHandler(fpath)
 
     # access some element
-    read_pixel= handler('pixel')
+    read_pixel = handler('pixel')
     read_td = handler('timestamp_fine')
     read_ps = handler('energy')
     read_ts = handler('timestamp_coarse')

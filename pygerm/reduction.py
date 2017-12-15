@@ -1,9 +1,10 @@
 import pandas as pd
 import numpy as np
-import skimage
+# import skimage
 from skimage.filters import threshold_otsu
-from skimage.transform import (hough_line, hough_line_peaks,
-                               probabilistic_hough_line)
+from skimage.transform import (hough_line, hough_line_peaks,)
+#                              probabilistic_hough_line)
+import matplotlib.pyplot as plt
 
 
 def bin_frame(data, bins, corr_mat=None):
