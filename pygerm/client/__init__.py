@@ -7,6 +7,9 @@ TD_BITMASK = 0x1ff
 TS_BITMASK = 0x1fffffff
 PD_BITMASK = 0xfff
 
+# number of channels for GeRM this is assumed to be global
+NCHANS = 32
+
 def payload2event(data):
     '''Split up the raw data coming over the socket.
 
@@ -28,6 +31,11 @@ def payload2event(data):
     chip = word1 >> 27 & CHIP_BITMASK
     # chan addr
     chan = word1 >> 22 & CHAN_BITMASK
+
+    # convert to pixel
+    pixel = chip*32
+    pixel = chip*NCHANS + chan
+
     # fine ts
     td = word1 >> 12 & TD_BITMASK
 
@@ -37,10 +45,10 @@ def payload2event(data):
     # FPGA tick
     ts = word2 & TS_BITMASK
 
-    return chip, chan, td, pd, ts
+    return pixel, td, pd, ts
 
 
-def event2payload(chip, chan, td, pd, ts):
+def event2payload(pixel, td, pd, ts):
     ''' Convert event data to a payload.
 
 
@@ -56,6 +64,8 @@ def event2payload(chip, chan, td, pd, ts):
         Note that endianness matters only when this is sent to a buffer (file
         network etc)
     '''
+    chan = pixel%NCHANS
+    chip = pixel//NCHANS
     # insigned little-endian, default
     # 2 words of 32 bit per data
     payload = np.zeros(len(chip)*2, dtype='<u4')
@@ -72,14 +82,14 @@ def event2payload(chip, chan, td, pd, ts):
     return payload
 
 
-DATA_TYPES = OrderedDict((('chip', 8),
-                          ('chan', 8),
+DATA_TYPES = OrderedDict((('pixel', 16),
                           ('timestamp_fine', 16),
                           ('energy', 16),
                           ('timestamp_coarse', 32)))
 
 # build a lookup table of the data types listed in zmq.py
-DATA_TYPEMAP = {name: num for num, name in enumerate(list(DATA_TYPES))}
+# let's be explicit
+DATA_TYPEMAP = dict(pixel=0, timestamp_fine=1, energy=2, timestamp_coarse=3)
 
 
 class ZClient:

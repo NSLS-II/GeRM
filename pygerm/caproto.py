@@ -198,6 +198,8 @@ class ChannelGeRMAcquire(ca.ChannelData):
                     fname = path / '{}.h5'.format(str(uuid.uuid4()))
                     with h5py.File(str(fname), 'w-') as fout:
                         g = fout.create_group('GeRM')
+                        # NOTE : this usage is now deprecated
+                        # Need to update if this class is used again
                         dsets = {k: g.create_dataset(k, shape=(ev_count,),
                                                      dtype=f'uint{w}')
                                  for k, w in DATA_TYPES.items()}
