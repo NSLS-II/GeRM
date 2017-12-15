@@ -34,7 +34,6 @@ def payload2event(data):
     chan = word1 >> 22 & CHAN_BITMASK
 
     # convert to pixel
-    pixel = chip*32
     pixel = chip*NCHANS + chan
 
     # fine ts
