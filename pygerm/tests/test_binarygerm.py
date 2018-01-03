@@ -35,17 +35,16 @@ def generate_payload():
     N = 3000
 
     # generate some random unsigned ints
-    def generate_data(N):
+    def generate_data(N, high=1000):
         # <u4 little endian unsigned 4 byte int
-        return np.random.randint(low=0, high=1000, size=N, dtype='<u4')
+        return np.random.randint(low=0, high=high, size=N, dtype='<u4')
 
-    chip = generate_data(N)
-    chan = generate_data(N)
+    pixel = generate_data(N, high=384)
     td = generate_data(N)
     pd = generate_data(N)
     ts = generate_data(N)
 
-    payload = event2payload(chip, chan, td, pd, ts)
+    payload = event2payload(pixel, td, pd, ts)
 
     return payload
 
@@ -79,20 +78,18 @@ def test_binary_germ():
     # strip first and last bit of payload
     # (endianness not issue here since this was generated from memory)
 
-    chip, chan, td, ps, ts = payload2event(germ_data[2:-2])
+    pixel, td, ps, ts = payload2event(germ_data[2:-2])
 
     # instantiate the handler
     handler = BinaryGeRMHandler(fpath)
 
     # access some element
-    read_chip = handler('chip')
-    read_chan = handler('chan')
+    read_pixel = handler('pixel')
     read_td = handler('timestamp_fine')
     read_ps = handler('energy')
     read_ts = handler('timestamp_coarse')
 
-    assert np.allclose(read_chip, chip)
-    assert np.allclose(read_chan, chan)
+    assert np.allclose(read_pixel, pixel)
     assert np.allclose(read_td, td)
     assert np.allclose(read_ps, ps)
     assert np.allclose(read_ts, ts)
