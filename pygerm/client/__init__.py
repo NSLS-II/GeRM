@@ -83,7 +83,8 @@ def event2payload(pixel, td, pd, ts):
     return payload
 
 
-DATA_TYPES = OrderedDict((('pixel', 16),
+DATA_TYPES = OrderedDict((('chip', 8),
+                           ('chan', 8),
                           ('timestamp_fine', 16),
                           ('energy', 16),
                           ('timestamp_coarse', 32)))
