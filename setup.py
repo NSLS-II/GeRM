@@ -10,7 +10,7 @@ setuptools.setup(
     license="BSD (3-clause)",
     url="https://github.com/NSLS-II/GeRM",
     packages=setuptools.find_packages(),
-    install_requires=['pyzmq', 'numpy'],
+    install_requires=['pyzmq', 'numpy', 'dask'],
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Programming Language :: Python :: 3.4",
