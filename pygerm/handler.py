@@ -1,4 +1,3 @@
-from databroker.assets.handlers_base import HandlerBase
 import h5py
 import numpy as np
 import dask.array as da
@@ -6,7 +5,7 @@ import dask.array as da
 from .client import payload2event, DATA_TYPEMAP
 
 
-class GeRMHandler(HandlerBase):
+class GeRMHandler():
     specs = {'GeRM'}
 
     def __init__(self, fpath):
@@ -20,7 +19,7 @@ class GeRMHandler(HandlerBase):
         self._file.close()
 
 
-class BinaryGeRMHandler(HandlerBase):
+class BinaryGeRMHandler():
     specs = {'BinaryGeRM'}
 
     def __init__(self, fpath, chunksize=None):
