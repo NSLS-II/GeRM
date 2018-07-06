@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 from skbeam.core.accumulators.histogram import Histogram
 from functools import partial
 
+
 def fix_time(ts, njumps=0, jump=2**29, thresh=2**26):
     ''' Fix the time in clock cycles from the FPGA
 
@@ -70,13 +71,13 @@ def fix_time(ts, njumps=0, jump=2**29, thresh=2**26):
     # time differences
     ts_diff = np.diff(ts)
 
-
     # find the regions where it's negative
     # this should just be a few (1, 2 dozen maybe?)
     # do abs so we can find quick ups and downs
     w, = np.where(np.abs(ts_diff) > thresh)
     if len(w) > 10:
-        print("Warning, detected more than 10 jumps? (long measurement maybe?)")
+        print("Warning, detected more than 10 jumps?"
+              " (long measurement maybe?)")
         print("Detected {} jumps".format(len(w)))
     if len(w) > 0:
         print("Jumps at {}".format(w))
@@ -92,10 +93,65 @@ def fix_time(ts, njumps=0, jump=2**29, thresh=2**26):
     return ts, njumps
 
 
+def get_time_range(germ_ts, chunksize=1000000, jump_val=2**29,
+                   thresh_val=2**26, td_resolution=40e-9):
+    '''
+        Get the full time range of GeRM data
+
+        The problem is that the register does not have enough bits to save the
+        full time range of data. So we must look for overflows and correct for
+        them. Use this routine to go through all data once and get an idea as
+        to what the full time range is.
+
+        For example, at the time of this writing, the overflow is
+        2**29*40e-9=21.47 s.
+
+        Parameters
+        ----------
+        germ_ts: np.ndarray or dask.array
+            the fine timestamp of the GeRM data (in clock cycles)
+
+        chunksize: int, optional
+            the size of chunks you want to process (in the event the data is
+            too large to process all at once)
+            Default is 1000000
+
+        jump_val: int, optional
+            The value of the overflow, for ex 2**29 (for 29 bit unsigned int)
+            Default is 2**29
+
+        thresh_val: int, optional
+            The value of the threshold
+            Default is 2**26
+
+        td_resolution: float, optional
+            the time resolution of the clock cycles
+            Default is 40e-9
+    '''
+    ti = np.asarray(germ_ts[0])
+    Nreads = len(germ_ts)//chunksize
+    njumps = 0
+    for i in range(Nreads):
+        print("running {} of {}".format(i, Nreads))
+        if i == 0:
+            germ_ts_chunk, njumps = \
+                fix_time(germ_ts[i*chunksize:(i+1)*chunksize], njumps=njumps,
+                         jump=jump_val, thresh=thresh_val)
+        else:
+            # pass the before last value
+            germ_ts_chunk, njumps = \
+                    fix_time(germ_ts[i*chunksize-1:(i+1)*chunksize],
+                             njumps=njumps, jump=jump_val, thresh=thresh_val)
+            germ_ts_chunk = germ_ts_chunk[1:]
+    tf = np.asarray(germ_ts_chunk[-1])
+
+    return ti, tf
+
+
 def histogram_germ(germ_ts, germ_td, germ_pd, germ_chip, germ_chan,
                    time_resolution, start_time, end_time,
                    energy_resolution, min_energy, max_energy,
-                   calibration = None,
+                   calibration=None,
                    td_resolution=40e-9, n_chans=32, n_chips=12,
                    jump_bits=29, thresh_bits=26,
                    chunksize=1000000,
@@ -170,8 +226,8 @@ def histogram_germ(germ_ts, germ_td, germ_pd, germ_chip, germ_chan,
 
         spectrum_edges: list of 3 1d np.ndarrays
             List of three edges, in order:
-                - the chips (useful for verification that the edges are correct,
-                should be integers)
+                - the chips (useful for verification that the edges are
+                correct, should be integers)
                 - the energies (should be in units of keV)
                     note: a proper calibration matrix must be used to properly
                     convert from ADU to keV. Else, the result is not keV
@@ -179,24 +235,29 @@ def histogram_germ(germ_ts, germ_td, germ_pd, germ_chip, germ_chan,
 
     '''
     if calibration is not None:
-        calA = calibration[0,:]
-        calB = calibration[1,:]
+        calA = calibration[0, :]
+        calB = calibration[1, :]
     else:
         print("Calibration not set. Histogram will be over ADU's")
 
     # prepare the histogram binning vals
     max_chip = n_chips*n_chans
-    n_chips = max_chip + 1
 
-    n_energy = int((max_energy- min_energy)/energy_resolution)
-    n_times = int((end_time-start_time)/time_resolution)
+    if energy_resolution == np.inf:
+        n_energy = 1
+    else:
+        n_energy = max(int((max_energy - min_energy)/energy_resolution), 1)
 
-    hh = Histogram((n_chips, 0, n_chips),
+    # to allow for force binning all time
+    if time_resolution == np.inf:
+        n_times = 1
+    else:
+        n_times = max(int((end_time-start_time)/time_resolution), 1)
+
+    hh = Histogram((max_chip, 0, max_chip),
                    (n_energy, min_energy, max_energy),
                    (n_times, start_time, end_time),
                    )
-
-    h_energies = hh.centers[1]
 
     Nreads = len(germ_ts)//chunksize
     njumps = 0
@@ -210,10 +271,14 @@ def histogram_germ(germ_ts, germ_td, germ_pd, germ_chip, germ_chan,
     for i in range(Nreads):
         print("running {} of {}".format(i, Nreads))
         if i == 0:
-            germ_ts_chunk, njumps = fix_time(germ_ts[i*chunksize:(i+1)*chunksize], njumps=njumps, jump=jump_val, thresh=thresh_val)
+            germ_ts_chunk, njumps = \
+                fix_time(germ_ts[i*chunksize:(i+1)*chunksize], njumps=njumps,
+                         jump=jump_val, thresh=thresh_val)
         else:
             # pass the before last value
-            germ_ts_chunk, njumps = fix_time(germ_ts[i*chunksize-1:(i+1)*chunksize], njumps=njumps, jump=jump_val, thresh=thresh_val)
+            germ_ts_chunk, njumps = \
+                    fix_time(germ_ts[i*chunksize-1:(i+1)*chunksize],
+                             njumps=njumps, jump=jump_val, thresh=thresh_val)
             germ_ts_chunk = germ_ts_chunk[1:]
 
         # now slice the rest
@@ -237,38 +302,35 @@ def histogram_germ(germ_ts, germ_td, germ_pd, germ_chip, germ_chan,
 
         time_delta = germ_ts_chunk[-1] - germ_ts_chunk[0]
         time_delta = time_delta*td_resolution
-        #print("time delta for this slice is {}s".format(time_delta))
-        #print("njumps : {}".format(njumps))
-
-
+        # print("time delta for this slice is {}s".format(time_delta))
+        # print("njumps : {}".format(njumps))
 
         # convert chip chan to pos
         germ_pos_chunk = germ_chip_chunk*n_chans + germ_chan_chunk
         # in case it's a dask array, turn it into an actual array
         germ_ts0 = np.asarray(germ_ts[0])
 
-        germ_t0 = germ_ts0*td_resolution
-
         germ_time_chunk = (germ_ts_chunk - germ_ts0)*td_resolution
 
         if calibration is not None:
-            germ_pd_chunk_corrected = germ_pd_chunk*calA[germ_pos_chunk] + calB[germ_pos_chunk]
+            germ_pd_chunk_corrected = (germ_pd_chunk*calA[germ_pos_chunk] +
+                                       calB[germ_pos_chunk])
         else:
             germ_pd_chunk_corrected = germ_pd_chunk
 
-
         # filling histogram
         print("Filling histogram")
-        #print(f"Energies: {germ_pd_chunk_corrected}")
+        # print(f"Energies: {germ_pd_chunk_corrected}")
         hh.fill(germ_pos_chunk, germ_pd_chunk_corrected, germ_time_chunk)
-        #raise
 
         # plotting now
-        h_lines = np.sum(hh.values[:,:,:], axis=1)
+        h_lines = np.sum(hh.values[:, :, :], axis=1)
         if plot:
-            plt.figure(13);plt.clf();
+            plt.figure(13)
+            plt.clf()
             plt.imshow(h_lines, aspect='auto',
-                    extent=(hh.centers[2][0], hh.centers[2][-1], hh.centers[0][-1], hh.centers[0][0]))
+                       extent=(hh.centers[2][0], hh.centers[2][-1],
+                               hh.centers[0][-1], hh.centers[0][0]))
             plt.xlabel("time (s)")
             plt.ylabel("channel #")
             plt.pause(.0001)
@@ -278,3 +340,36 @@ def histogram_germ(germ_ts, germ_td, germ_pd, germ_chip, germ_chan,
 
 histogram_germ_uncalibrated = partial(histogram_germ, energy_resolution=1,
                                       min_energy=0, max_energy=4096)
+
+
+def germ_heat_map(germ_ts, germ_td, germ_pd, germ_chip, germ_chan,
+                  energy_resolution, min_energy, max_energy,
+                  calibration=None,
+                  td_resolution=40e-9, n_chans=32, n_chips=12,
+                  jump_bits=29, thresh_bits=26,
+                  chunksize=1000000,
+                  plot=True, verbose=False):
+    '''
+        Calls histogram germ but sums over all times.
+    '''
+    hh_vals, hh_centers = histogram_germ(germ_ts, germ_td, germ_pd, germ_chip,
+                                         germ_chan,
+                                         energy_resolution=energy_resolution,
+                                         min_energy=min_energy,
+                                         max_energy=max_energy,
+                                         time_resolution=np.inf,
+                                         start_time=0,
+                                         end_time=np.inf,
+                                         calibration=None,
+                                         td_resolution=40e-9, n_chans=32,
+                                         n_chips=12, jump_bits=29,
+                                         thresh_bits=26, chunksize=1000000,
+                                         plot=False, verbose=False)
+
+    heatmap_centers = [hh_centers[0], hh_centers[1]]
+    heatmap = hh_vals[:, :, 0]
+    return heatmap, heatmap_centers
+
+
+germ_heat_map_uncalibrated = partial(germ_heat_map, energy_resolution=1,
+                                     min_energy=0, max_energy=4096)
