@@ -58,11 +58,7 @@ def fix_time(ts, njumps=0, jump=2**29, thresh=2**26):
             less than my aggressive threhsold of 2**26)
     '''
     # if it's dask array compute it
-    if hasattr(ts, 'compute'):
-        ts = ts.astype(int).compute()
-    else:
-        # else just copy
-        ts = ts.copy().astype(int)
+    ts = np.array(ts.astype(int), copy=True)
 
     # if there is a baseline to add, add it
     # (for the overflow)
@@ -181,11 +177,6 @@ def histogram_germ(germ_ts, germ_td, germ_pd, germ_chip, germ_chan,
                 - the times (in s)
 
     '''
-    if hasattr(germ_ts, 'compute'):
-        using_dask = True
-    else:
-        using_dask = False
-
     if calibration is not None:
         calA = calibration[0,:]
         calB = calibration[1,:]
@@ -239,17 +230,12 @@ def histogram_germ(germ_ts, germ_td, germ_pd, germ_chip, germ_chan,
         tot_hist[i] = hh_np
 
         sort_ind = np.argsort(germ_ts_chunk)
-        germ_ts_chunk = germ_ts_chunk[sort_ind].astype(np.int)
-        if using_dask:
-            germ_td_chunk = germ_td_chunk[sort_ind].compute().astype(np.int)
-            germ_pd_chunk = germ_pd_chunk[sort_ind].compute().astype(np.int)
-            germ_chip_chunk = germ_chip_chunk[sort_ind].compute().astype(np.int)
-            germ_chan_chunk = germ_chan_chunk[sort_ind].compute().astype(np.int)
-        else:
-            germ_td_chunk = germ_td_chunk[sort_ind].astype(np.int)
-            germ_pd_chunk = germ_pd_chunk[sort_ind].astype(np.int)
-            germ_chip_chunk = germ_chip_chunk[sort_ind].astype(np.int)
-            germ_chan_chunk = germ_chan_chunk[sort_ind].astype(np.int)
+        # in case it's a dask array, make it an array
+        germ_ts_chunk = np.asarray(germ_ts_chunk[sort_ind].astype(np.int))
+        germ_td_chunk = np.asarray(germ_td_chunk[sort_ind].astype(np.int))
+        germ_pd_chunk = np.asarray(germ_pd_chunk[sort_ind].astype(np.int))
+        germ_chip_chunk = np.asarray(germ_chip_chunk[sort_ind].astype(np.int))
+        germ_chan_chunk = np.asarray(germ_chan_chunk[sort_ind].astype(np.int))
 
         time_delta = germ_ts_chunk[-1] - germ_ts_chunk[0]
         time_delta = time_delta*td_resolution
@@ -260,10 +246,8 @@ def histogram_germ(germ_ts, germ_td, germ_pd, germ_chip, germ_chan,
 
         # convert chip chan to pos
         germ_pos_chunk = germ_chip_chunk*n_chans + germ_chan_chunk
-        if using_dask:
-            germ_ts0 = germ_ts[0].compute()
-        else:
-            germ_ts0 = germ_ts[0]
+        # in case it's a dask array, turn it into an actual array
+        germ_ts0 = np.asarray(germ_ts[0])
 
         germ_t0 = germ_ts0*td_resolution
 
@@ -292,6 +276,3 @@ def histogram_germ(germ_ts, germ_td, germ_pd, germ_chip, germ_chan,
             plt.pause(.0001)
 
     return hh.values, hh.centers
-
-
-def fit_lines():
