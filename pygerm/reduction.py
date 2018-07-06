@@ -13,6 +13,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from skbeam.core.accumulators.histogram import Histogram
+from functools import partial
 
 def fix_time(ts, njumps=0, jump=2**29, thresh=2**26):
     ''' Fix the time in clock cycles from the FPGA
@@ -222,10 +223,7 @@ def histogram_germ(germ_ts, germ_td, germ_pd, germ_chip, germ_chan,
         germ_chip_chunk = germ_chip[chunkslice]
         germ_chan_chunk = germ_chan[chunkslice]
 
-        if using_dask:
-            hh_np, bin_edges = np.histogram(germ_pd_chunk.compute(), bins=Nbins)
-        else:
-            hh_np, bin_edges = np.histogram(germ_pd_chunk, bins=Nbins)
+        hh_np, bin_edges = np.histogram(np.asarray(germ_pd_chunk), bins=Nbins)
 
         tot_hist[i] = hh_np
 
@@ -261,7 +259,7 @@ def histogram_germ(germ_ts, germ_td, germ_pd, germ_chip, germ_chan,
 
         # filling histogram
         print("Filling histogram")
-        print(f"Energies: {germ_pd_chunk_corrected}")
+        #print(f"Energies: {germ_pd_chunk_corrected}")
         hh.fill(germ_pos_chunk, germ_pd_chunk_corrected, germ_time_chunk)
         #raise
 
@@ -276,3 +274,7 @@ def histogram_germ(germ_ts, germ_td, germ_pd, germ_chip, germ_chan,
             plt.pause(.0001)
 
     return hh.values, hh.centers
+
+
+histogram_germ_uncalibrated = partial(histogram_germ, energy_resolution=1,
+                                      min_energy=0, max_energy=4096)

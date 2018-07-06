@@ -44,7 +44,7 @@ class BinaryGeRMHandler():
             res = fhandler_init['germ_ts']
             # etc...
         '''
-        raw_data = np.memmap(fpath, dtype='>u4')
+        raw_data = np.memmap(fpath, dtype='>u4', mode="r")
 
         # verify the data
         first_word = raw_data[0]
