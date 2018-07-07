@@ -10,6 +10,8 @@ GeRM Documentation
    :maxdepth: 2
 
    installation
+   handlers
    calibration
+   time_series_data
    usage
    release-history

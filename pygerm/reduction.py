@@ -318,6 +318,9 @@ def histogram_germ(germ_ts, germ_td, germ_pd, germ_chip, germ_chan,
         else:
             germ_pd_chunk_corrected = germ_pd_chunk
 
+        # for debugging
+        # print(f"corrected energies {germ_pd_chunk_corrected}")
+
         # filling histogram
         print("Filling histogram")
         # print(f"Energies: {germ_pd_chunk_corrected}")
@@ -364,7 +367,7 @@ def germ_heat_map(germ_ts, germ_td, germ_pd, germ_chip, germ_chan,
                                          time_resolution=np.inf,
                                          start_time=0,
                                          end_time=np.inf,
-                                         calibration=None,
+                                         calibration=calibration,
                                          td_resolution=40e-9, n_chans=32,
                                          n_chips=12, jump_bits=29,
                                          thresh_bits=26, chunksize=1000000,

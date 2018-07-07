@@ -3,26 +3,136 @@ Calibration
 ===========
 
 Calibrating a data set is easy.
+It is assumed that you have read the documentation on :doc:`handlers
+<handlers>`.
 
 First, we need to start with some data:
 
 .. code-block:: python
 
-Start with a heatmap.
+    from pygerm.reduction import germ_heat_map_uncalibrated
+    # get the heatmap to calibrate
+    heatmap, heatmap_centers =  \
+        germ_heat_map_uncalibrated(germ_ts, germ_td, germ_pd, germ_chip,
+                                   germ_chan, td_resolution=td_resolution,
+                                   n_chans=n_chans, n_chips=n_chips,
+                                   jump_bits=jump_bits,
+                                   thresh_bits=thresh_bits,
+                                   chunksize=chunksize, plot=False)
+
+Here, ``germ_ts``, ``germ_td``, ``germ_pd``, ``germ_chip`` and ``germ_chan``
+are explained in the :doc:`handlers <handlers>` documentation.
 
 
-.. figure:: figs/01_uncalibrated_heatmap.png
+Here is a sample heatmap:
+
+.. figure:: figs/001_uncalibrated_heatmap.png
+
+The y axis are the channel numbers and the x-axis the ADU's measured. ADU's
+convert to energy with some conversion factor. The more the ADU's, the higher
+the energy.
+
+To make sense of this data, we need to convert the value of these ADU's to
+energy. The formula is:
+
+.. code-block:: python
+
+    energy = ADUS*a + b
+
+where ``a > 0``.
+
+These heat maps need to be calibrated. Calibration involves measuring a known
+sample with known peak positions and fitting these peak positions.
+
+In this example, the peaks seen in the heatmap come from the molydenum k-alpha,
+kbeta and Americium peak (at 60keV or so). The americium emits at 60keV and
+excites the molybdenum, which then emits at the k-alpha and k-beta lines.
+
+The specific energies of these peaks are:
+
+* Americium : 59.5 keV
+* Mo K-alpha : 17.4 keV
+* Mo K-beta : 19.6 keV
+
+For the calibration, we actually only need two peaks. We select the two highest
+peaks we see: amerium (59.5keV) and Mo K-beta (19.6 keV).
+
+Before calibrating, we need to provide a window as to where the peaks are
+located. Looking at the heatmap by eye, the lower peak seems to be within
+``[800,1400]`` ADU's and the higher peak between ``[3100,3900]`` ADU's. It is
+important when choosing this range that the peak is present in the window **for
+every channel**. 
+
+
+**Peak overlap note** : It is important that you select the **two highest
+peaks** as the peak finding algorithm depends on this. The peak positions are
+guessed by finding the channel with the highest measured ADU's in the peak
+windows given.
+
+Finally, with all this information, we can supply it to the calibration
+routine:
 
 .. code-block:: python
 
     cal_vals = run_cal(heat_map,
                        energies=[17.4, 59.5],
-                       peak_guesses=[[800, 1400],
-                                     [3100,3900]])
+                       peak_guesses=[[800, 1400], [3100,3900]], plot=True)
 
-Here, ``heat_map`` is a 2d array of energy x channel.  For the calibration, we
-need two peaks that are far enough apart, whose energies are known. In this
-case, the peaks are at 17.4keV and 59.5keV.  Finally, we need some guesses as
-to where these peaks are located. We just need the window to be good enough to
-locate the approximate peak position by locating the index where the max
-position is.
+where ``energies`` are the peak energies and ``peak_guesses`` are the list of
+peak windows mentioned above.
+
+If running this with ``plot=True``, one will see a live plot of the fits, as
+below:
+
+.. figure:: figs/002_heatmap_fit.png
+
+The result, ``cal_vals`` will be a ``(2, n_channels)`` array where, for the nth
+channel, the conversion is:
+
+.. code-block:: python
+
+    energy_n = cal_vals[n][0]*ADUS_n + cal_vals[n][1]
+
+Finally, to obtain the calibrated heatmap, just run the calibrated version of
+the heat map:
+
+.. code-block:: python
+
+    from pygerm.reduction import germ_heat_map
+
+    heatmap, heatmap_centers =  germ_heat_map(germ_ts, germ_td, germ_pd, germ_chip,
+                                          germ_chan, energy_resolution=.1,
+                                          min_energy=0, max_energy=70,
+                                          calibration = calibration,
+                                          td_resolution=40e-9, n_chans=32,
+                                          n_chips=12, jump_bits=29,
+                                          thresh_bits=26, chunksize=1000000,
+                                          plot=False)
+
+
+In this case, you'll see some new parameters show up: ``energy_resolution``,
+``min_energy``, ``max_energy``. These allow you to pre-select an ROI before
+running the computation. In this case we set ``energy_resolution=.1`` (keV),
+``min_energy=0`` and ``max_energy=70`` (keV) to select all energies we expect
+the GeRM detector to have measured over.
+
+A plot of a sample heatmap obtained is below:
+
+.. figure:: figs/003_calibrated_heat_map.png
+
+This was obtained with the following code:
+
+.. code-block:: python
+
+    dy = heatmap_centers[0][0]-heatmap_centers[0][1]
+    dx = heatmap_centers[0][1]-heatmap_centers[0][0]
+    extent = [
+              heatmap_centers[1][0] + dx*.5, heatmap_centers[1][-1] + dx*.5,
+              heatmap_centers[0][-1] - dy*.5, heatmap_centers[0][0] + dy*.5,
+    ]
+
+    import matplotlib.pyplot as plt
+    plt.figure(2);plt.clf();
+    plt.imshow(heatmap, extent=extent,vmin=0, vmax=20)
+    plt.xlabel("Channel number")
+    plt.ylabel("Energy (keV)")
