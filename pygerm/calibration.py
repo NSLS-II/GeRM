@@ -82,7 +82,7 @@ def get_calibration_value(cen_data, y):
     return cal_val
 
 
-def fit_all_channels(data, peak_guesses, plot=False):
+def fit_all_channels(data, peak_guesses, peak_sigmas=None, plot=False):
     '''
         This fits the 2D binned data and fits each column to three peaks.
 
@@ -94,45 +94,61 @@ def fit_all_channels(data, peak_guesses, plot=False):
         data : 2d np.ndarray
             A 2d array of the counts per channel x energy (ADU)
 
-        peak_guesses: 2 lists
-            Two lists specifying the window where to expect each peak.
+        peak_guesses: N lists
+            N lists specifying the window where to expect each peak.
+
+        peak_sigmas: N lists
+            N lists specifying the window of sigmas for the peaks
 
         plot: bool, optional
             Whether or not to plot the data as it is being fit
     '''
     if plot:
         fig, ax = plt.subplots()
-    gauss_mod1 = Model(gaussian, prefix='g1_')
-    gauss_mod3 = Model(gaussian, prefix='g3_')
 
-    gauss_mod = gauss_mod1+gauss_mod3
+    Npeaks = len(peak_guesses)
+    if peak_sigmas is None:
+        peak_sigmas = [[4, 50] for i in range(Npeaks)]
 
-    # g2 used to be a peak I removed
-    g1_cen_list = []
-    g3_cen_list = []
+    def background(x, constant=0):
+        return constant
+
+    model = Model(background, prefix="bg_")
+    for i in range(Npeaks):
+        model = model + Model(gaussian, prefix=f'g{i}_')
+
+    cen_list =  [[] for i in range(Npeaks)]
+
     x = np.arange(data.shape[0])
+
     for j in range(data.shape[1]):
         print("Fitting peak number {}".format(j))
-        g1_cen = peak_guesses[0][0] + \
-            np.argmax(data[peak_guesses[0][0]:peak_guesses[0][1], j])
-        g3_cen = peak_guesses[1][0] + \
-            np.argmax(data[peak_guesses[1][0]:peak_guesses[1][1], j])
+        param_kwargs = {}
+        #param_kwargs['bg_constant'] = np.min(data[:,j])
+        bg_est = np.min(data[:,j])
+        model.set_param_hint('bg_constant', value=bg_est, vary=True)
+        for i, peak_guess in enumerate(peak_guesses):
+            cen = peak_guess[0] + \
+                np.argmax(data[peak_guess[0]:peak_guess[1], j])
+            amp = data[cen,j]
+            model.set_param_hint(f'g{i}_amplitude', value=amp, vary=True,
+                                     min=0, max=np.inf)
+            model.set_param_hint(f'g{i}_center', value=cen, vary=True,
+                                     min=cen-30, max=cen+30)
+            model.set_param_hint(name=f'g{i}_sigma', value=10, vary=True,
+                                     min=peak_sigmas[i][0],
+                                     max=peak_sigmas[i][1])
+            #param_kwargs[f'g{i}_amplitude'] = amp
+            #param_kwargs[f'g{i}_center'] = cen
+            #param_kwargs[f'g{i}_sigma'] = 10.
 
-        gauss_mod.set_param_hint('g1_center', value=g1_cen, vary=True,
-                                 min=g1_cen-30, max=g1_cen+30)
-        gauss_mod.set_param_hint('g3_center', value=g3_cen, vary=True,
-                                 min=g3_cen-30, max=g3_cen+30)
-        gauss_mod.set_param_hint(name='g1_sigma', value=20, vary=True, min=5,
-                                 max=40)
-        gauss_mod.set_param_hint(name='g3_sigma', value=20, vary=True, min=5,
-                                 max=40)
+        params = model.make_params()
 
-        params = gauss_mod.make_params(g1_center=g1_cen, g1_area=1000,
-                                       g1_sigma=10.0, g3_center=g3_cen,
-                                       g3_area=1000, g3_sigma=10.0)
-        result = gauss_mod.fit(data[:, j], params, x=x)
-        g1_cen_list.append(result.values['g1_center'])
-        g3_cen_list.append(result.values['g3_center'])
+        result = model.fit(data[:, j], params, x=x)
+
+        for i in range(Npeaks):
+            cen_list[i].append(result.values[f'g{i}_center'])
+
         if plot:
             ax.cla()
             ax.plot(result.data, color='k', label="data")
@@ -141,4 +157,81 @@ def fit_all_channels(data, peak_guesses, plot=False):
             fig.canvas.draw_idle()
             plt.pause(.00001)
 
-    return g1_cen_list, g3_cen_list
+    return cen_list
+
+
+def compute_corrs(h_lines):
+    '''
+        Compute the correlations for the data along an axis.
+
+        Parameters
+        ----------
+        data: 2d np.ndarray
+            a set of lines of Nlines x Nsteps
+            where Nsteps are arbitrary dimension
+
+        See Also
+        --------
+        skbeam.core.correlation.CrossCorrelator
+    '''
+    corrs = np.fft.ifft(np.fft.fft(h_lines[:-1],axis=1)*
+                        np.conj(np.fft.fft(h_lines[1:], axis=1))).real
+    return corrs
+
+
+def compute_shifts(data,plot=False):
+    '''
+        Calculate the shift per step, for list of lines.
+
+        Usually, step is in tth and we measure how many pixels
+            a measurement has moved by.
+
+        Parameters
+        ----------
+
+        data : 2d np.ndarray
+            the data, lines versus channels
+            we measure the shift from one line to the other
+
+        plot: bool, optional
+            Whether or not to plot the data
+
+        Notes
+        -----
+        For this to succeed, it's usually best to make sure the shift of the
+        data is not more than a few pixels in steps.
+
+        Returns
+        -------
+
+        shifts : list
+            list of the shifts computed for each step
+    '''
+    corrs = compute_corrs(data.astype(float))
+    step_diffs = fit_all_channels(corrs.T, peak_guesses=[[0,200]],
+                                  peak_sigmas=[[0.1, 3]], plot=plot)[0]
+    return step_diffs
+
+
+def compute_tth_per_step(h_lines, tths, plot=False):
+    '''
+        Compute the tth change per step for a set of line measurements.
+
+        Parameters
+        ----------
+        h_lines : 2d np.ndarray
+            the lines that shift in dimensions of Nlines x Ntthetas
+
+        tths: 1d np.ndarray
+            The shift in tth per line
+
+        plot : bool, optional
+            whether or not to plot the intermediate result
+    '''
+
+    step_diffs = compute_shifts(h_lines, plot=plot)
+    tth_diffs = np.abs(np.diff(tths))
+    tth_per_step = np.mean(tth_diffs/step_diffs)
+    tth_per_step_std = np.std(tth_diffs/step_diffs)
+
+    return tth_per_step, tth_per_step_std
