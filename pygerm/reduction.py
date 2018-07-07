@@ -338,6 +338,7 @@ def histogram_germ(germ_ts, germ_td, germ_pd, germ_chip, germ_chan,
     return hh.values, hh.centers
 
 
+# this is the uncalibrated version
 histogram_germ_uncalibrated = partial(histogram_germ, energy_resolution=1,
                                       min_energy=0, max_energy=4096)
 
@@ -351,6 +352,9 @@ def germ_heat_map(germ_ts, germ_td, germ_pd, germ_chip, germ_chan,
                   plot=True, verbose=False):
     '''
         Calls histogram germ but sums over all times.
+
+        This is useful when all that is needed is a heatmap of
+            channels x energy
     '''
     hh_vals, hh_centers = histogram_germ(germ_ts, germ_td, germ_pd, germ_chip,
                                          germ_chan,
@@ -371,5 +375,21 @@ def germ_heat_map(germ_ts, germ_td, germ_pd, germ_chip, germ_chan,
     return heatmap, heatmap_centers
 
 
+# uncalibrated version of heatmap
 germ_heat_map_uncalibrated = partial(germ_heat_map, energy_resolution=1,
                                      min_energy=0, max_energy=4096)
+
+def select_energy_band(spectrum, energy_bins, lo, hi):
+    '''
+        Average an energy band.
+    '''
+    lo_ind, hi_ind = energy_bins.searchsorted([lo, hi])
+    return spectrum[lo_ind:hi_ind].sum(axis=0)
+
+
+def stack_1D_spectrum(spectrum_list, energy_bins, lo, hi):
+    '''
+        Stack 1D spectra.
+    '''
+    return np.array([select_energy_band(s, energy_bins, lo, hi)
+                     for s in spectrum_list])
