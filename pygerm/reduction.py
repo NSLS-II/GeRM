@@ -145,7 +145,7 @@ def get_time_range(germ_ts, chunksize=1000000, jump_val=2**29,
             germ_ts_chunk = germ_ts_chunk[1:]
     tf = np.asarray(germ_ts_chunk[-1])
 
-    return ti, tf
+    return ti*td_resolution, tf*td_resolution
 
 
 def histogram_germ(germ_ts, germ_td, germ_pd, germ_chip, germ_chan,
