@@ -2,6 +2,9 @@
 Calibration
 ===========
 
+Calibration for Response
+------------------------
+
 Calibrating a data set is easy.
 It is assumed that you have read the documentation on :doc:`handlers
 <handlers>`.
@@ -136,3 +139,22 @@ This was obtained with the following code:
     plt.imshow(heatmap, extent=extent,vmin=0, vmax=20)
     plt.xlabel("Channel number")
     plt.ylabel("Energy (keV)")
+
+
+Q Calibration
+-------------
+The next step is q calibration. It is not clear what the two-theta range is per
+channel on the detector. This depends on a multitude of factors such as
+incident energy, sample to detector distance, and pixel size. The easiest way
+to obtain this number is to run a calibration scan.
+
+At the beamline, one will run a calibration scan of the sort:
+
+.. code-block:: python
+
+    RE(bp.rel_scan([det], tth, -1, 1, 100))
+
+Which will result in multiple values stored. This can be retrieved as a
+``pd.DataFrame`` as we did for the calibration, except with an extra column,
+the name of the two-theta motor scanned. As opposed to the previous
+``pd.DataFrame``, this table will contain more than one row.
