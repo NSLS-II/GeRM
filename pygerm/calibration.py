@@ -174,6 +174,17 @@ def compute_corrs(h_lines):
         --------
         skbeam.core.correlation.CrossCorrelator
     '''
+    # NOTE: There is a better way to do this
+    # One should expand the image to twice the size, run the correlation
+    # and normalize by the counts since now we dont have the same number
+    # of counts per shift
+    # Also, use symmetric averaging, something I developed and put in
+    # scikit-beam (Julien Lhermitte) a while ago and have found it yields
+    # superior correlation signals This amounts to looping over
+    # CrossCorrelator. I choose not to do it here since this will run faster
+    # and work just fine and I am focusing on getting this working for a test.
+    # However, for very large shifts, the scheme I have described here would be
+    # advantageous if this algorithm and stitching are found to be useful.
     corrs = np.fft.ifft(np.fft.fft(h_lines[:-1],axis=1)*
                         np.conj(np.fft.fft(h_lines[1:], axis=1))).real
     return corrs
