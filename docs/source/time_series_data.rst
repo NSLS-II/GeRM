@@ -11,9 +11,27 @@ ot a binary blob.
 
 It is assumed that you have read the :doc:`calibration <calibration>` step.
 
+The first step to analyzing the time series data is to know what ranges to bin
+on. For example, we need to know the time range. To obtain it:
+
+.. code-block:: python
+
+    from pygerm.reduction import get_time_range
+    ti, tf = get_time_range(germ_ts)
+
+
+In this case, ``tf-ti`` will provide you the time range of your data set. The
+function that obtains this time range is not very straightforward. One main
+reason is that the registers that record the timestamp (at 40ns resolution) of
+the data overflow. At the time of this writing, this overflow typically occurs
+near 21s or so (29 bits reserved for 40ns clock cycles). We need to go through
+the full data set and catch these overflows to properly judge how long a data
+set took.
+
+
 The data can be read back in by the following function:
 
-.. code-block: python
+.. code-block:: python
 
     from pygerm.reduction import histogram_germ
 
@@ -28,7 +46,7 @@ The data can be read back in by the following function:
                                         chunksize=1000000, plot=True)
 
 
-.. figure:: figs/004_time_series_data.png
+.. figure:: figs/004_times_series_map.png
 
 
 

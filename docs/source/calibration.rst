@@ -158,3 +158,41 @@ Which will result in multiple values stored. This can be retrieved as a
 ``pd.DataFrame`` as we did for the calibration, except with an extra column,
 the name of the two-theta motor scanned. As opposed to the previous
 ``pd.DataFrame``, this table will contain more than one row.
+
+
+.. code-block:: python
+
+    from pygerm.reduction import get_Iq_lines
+
+    min_energy = 30
+    max_energy = 60
+    h_lines = get_Iq_lines(df, min_energy, max_energy, calibration=calibration)
+
+
+A sample of these ``h_lines`` is plotted here, versus two theta:
+
+.. figure:: figs/005_qcalib_lines.png
+
+This was plotted with the following code (note most of the code prepares the
+image extent):
+
+.. code-block:: python
+
+    tth = np.asarray(df.diff_tth_i)
+    dtth = tth[1]-tth[0]
+    extent = [0-.5, n_chips*n_chans+.5,
+            tth[-1]-.5*dtth, tth[0]+.5*tth[-1]]
+
+    import matplotlib.pyplot as plt
+    plt.figure(2)
+    plt.clf()
+    plt.imshow(h_lines, extent=extent)
+    plt.xlabel("channel #", size=40)
+    plt.ylabel("two-theta (degrees)", size=40)
+
+
+Cross-Correlations
+~~~~~~~~~~~~~~~~~~
+
+The simplest way to measure the shifts is through running cross correlations in
+the data.

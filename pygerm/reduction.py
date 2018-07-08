@@ -382,6 +382,62 @@ def germ_heat_map(germ_ts, germ_td, germ_pd, germ_chip, germ_chan,
 germ_heat_map_uncalibrated = partial(germ_heat_map, energy_resolution=1,
                                      min_energy=0, max_energy=4096)
 
+
+def get_Iq_lines(df, min_energy, max_energy, calibration=None,
+                 td_resolution=40e-9, n_chans=32, n_chips=12,
+                 jump_bits=29, thresh_bits=26, chunksize=1000000):
+    '''
+        Get the I(q) lines by averaging over all time and an energy ROI.
+
+        Parameters
+        ----------
+        df: pandas dataframe with the following columns:
+            germ_ts : dask.array or np.ndarray
+                timestamp in seconds
+            germ_td : dask.array or np.ndarray
+                timestamp in clock cycles
+            germ_pd : dask.array or np.ndarray
+                the germ data
+            germ_chip : dask.array or np.ndarray
+                the channel number
+            germ_chan : dask.array or np.ndarray
+                the chip number
+        min_energy: float
+            the minimum energy to sum on
+        max_energy: float
+            the maxmimum energy to sum on
+
+    '''
+    hh_vals_tot = list()
+    energy_resolution=max_energy-min_energy
+    # iterate over theta
+    for i in range(df.shape[0]):
+        print("iteration {} of {}".format(i,df.shape[0]))
+        tth = df.iloc[i].diff_tth_i
+        germ_ts = df.iloc[i].germ_ts
+        germ_td = df.iloc[i].germ_td
+        germ_pd = df.iloc[i].germ_pd
+        germ_chan = df.iloc[i].germ_chan
+        germ_chip = df.iloc[i].germ_chip
+
+        hh_vals, hh_centers =  germ_heat_map(germ_ts, germ_td, germ_pd, germ_chip,
+                                             germ_chan, energy_resolution,
+                                             min_energy, max_energy,
+                                             calibration=calibration,
+                                             td_resolution=td_resolution,
+                                             n_chans=n_chans, n_chips=n_chips,
+                                             jump_bits=jump_bits,
+                                             thresh_bits=thresh_bits,
+                                             chunksize=chunksize, plot=False)
+
+        hh_vals_tot.append(hh_vals)
+
+
+    h_lines = np.stack(hh_vals_tot)[:,:,0]
+
+    return h_lines
+
+
 def select_energy_band(spectrum, energy_bins, lo, hi):
     '''
         Average an energy band.
