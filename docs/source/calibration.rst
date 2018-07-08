@@ -256,3 +256,9 @@ Alternatives
 It may be possible to have this calibration working using a Hough transform
 (suggested by Thomas Caswell; see in scikit-image). This could be investigated
 in the future.
+
+Next
+~~~~
+
+Once the two-theta per step has been determined, one can stitch the image.
+See :doc:`stitching <stitching>`.

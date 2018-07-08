@@ -14,5 +14,4 @@ GeRM Documentation
    calibration
    stitching
    time_series_data
-   usage
    release-history
