@@ -409,31 +409,30 @@ def get_Iq_lines(df, min_energy, max_energy, calibration=None,
 
     '''
     hh_vals_tot = list()
-    energy_resolution=max_energy-min_energy
+    energy_resolution = max_energy-min_energy
     # iterate over theta
     for i in range(df.shape[0]):
-        print("iteration {} of {}".format(i,df.shape[0]))
-        tth = df.iloc[i].diff_tth_i
+        print("iteration {} of {}".format(i, df.shape[0]))
         germ_ts = df.iloc[i].germ_ts
         germ_td = df.iloc[i].germ_td
         germ_pd = df.iloc[i].germ_pd
         germ_chan = df.iloc[i].germ_chan
         germ_chip = df.iloc[i].germ_chip
 
-        hh_vals, hh_centers =  germ_heat_map(germ_ts, germ_td, germ_pd, germ_chip,
-                                             germ_chan, energy_resolution,
-                                             min_energy, max_energy,
-                                             calibration=calibration,
-                                             td_resolution=td_resolution,
-                                             n_chans=n_chans, n_chips=n_chips,
-                                             jump_bits=jump_bits,
-                                             thresh_bits=thresh_bits,
-                                             chunksize=chunksize, plot=False)
+        hh_vals, hh_centers = germ_heat_map(germ_ts, germ_td, germ_pd,
+                                            germ_chip, germ_chan,
+                                            energy_resolution, min_energy,
+                                            max_energy,
+                                            calibration=calibration,
+                                            td_resolution=td_resolution,
+                                            n_chans=n_chans, n_chips=n_chips,
+                                            jump_bits=jump_bits,
+                                            thresh_bits=thresh_bits,
+                                            chunksize=chunksize, plot=False)
 
         hh_vals_tot.append(hh_vals)
 
-
-    h_lines = np.stack(hh_vals_tot)[:,:,0]
+    h_lines = np.stack(hh_vals_tot)[:, :, 0]
 
     return h_lines
 

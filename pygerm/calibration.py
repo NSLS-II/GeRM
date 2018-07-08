@@ -117,30 +117,25 @@ def fit_all_channels(data, peak_guesses, peak_sigmas=None, plot=False):
     for i in range(Npeaks):
         model = model + Model(gaussian, prefix=f'g{i}_')
 
-    cen_list =  [[] for i in range(Npeaks)]
+    cen_list = [[] for i in range(Npeaks)]
 
     x = np.arange(data.shape[0])
 
     for j in range(data.shape[1]):
         print("Fitting peak number {}".format(j))
-        param_kwargs = {}
-        #param_kwargs['bg_constant'] = np.min(data[:,j])
-        bg_est = np.min(data[:,j])
+        bg_est = np.min(data[:, j])
         model.set_param_hint('bg_constant', value=bg_est, vary=True)
         for i, peak_guess in enumerate(peak_guesses):
             cen = peak_guess[0] + \
                 np.argmax(data[peak_guess[0]:peak_guess[1], j])
-            amp = data[cen,j]
+            amp = data[cen, j]
             model.set_param_hint(f'g{i}_amplitude', value=amp, vary=True,
-                                     min=0, max=np.inf)
+                                 min=0, max=np.inf)
             model.set_param_hint(f'g{i}_center', value=cen, vary=True,
-                                     min=cen-30, max=cen+30)
+                                 min=cen-30, max=cen+30)
             model.set_param_hint(name=f'g{i}_sigma', value=10, vary=True,
-                                     min=peak_sigmas[i][0],
-                                     max=peak_sigmas[i][1])
-            #param_kwargs[f'g{i}_amplitude'] = amp
-            #param_kwargs[f'g{i}_center'] = cen
-            #param_kwargs[f'g{i}_sigma'] = 10.
+                                 min=peak_sigmas[i][0],
+                                 max=peak_sigmas[i][1])
 
         params = model.make_params()
 
@@ -185,12 +180,12 @@ def compute_corrs(h_lines):
     # and work just fine and I am focusing on getting this working for a test.
     # However, for very large shifts, the scheme I have described here would be
     # advantageous if this algorithm and stitching are found to be useful.
-    corrs = np.fft.ifft(np.fft.fft(h_lines[:-1],axis=1)*
+    corrs = np.fft.ifft(np.fft.fft(h_lines[:-1], axis=1) *
                         np.conj(np.fft.fft(h_lines[1:], axis=1))).real
     return corrs
 
 
-def compute_shifts(data,plot=False):
+def compute_shifts(data, plot=False):
     '''
         Calculate the shift per step, for list of lines.
 
@@ -219,7 +214,7 @@ def compute_shifts(data,plot=False):
             list of the shifts computed for each step
     '''
     corrs = compute_corrs(data.astype(float))
-    step_diffs = fit_all_channels(corrs.T, peak_guesses=[[0,200]],
+    step_diffs = fit_all_channels(corrs.T, peak_guesses=[[0, 200]],
                                   peak_sigmas=[[0.1, 3]], plot=plot)[0]
     return step_diffs
 
