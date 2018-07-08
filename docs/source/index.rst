@@ -12,6 +12,7 @@ GeRM Documentation
    installation
    handlers
    calibration
+   stitching
    time_series_data
    usage
    release-history

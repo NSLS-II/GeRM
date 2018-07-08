@@ -196,3 +196,63 @@ Cross-Correlations
 
 The simplest way to measure the shifts is through running cross correlations in
 the data.
+
+The last step is from this calibration data, compute the two-theta per step.
+The code to do this is as follows:
+
+.. code-block:: python
+
+    from pygerm.calibration import compute_tth_per_step
+
+    tth_per_step, tth_per_step_std = compute_tth_per_step(h_lines[3:],
+                                                          df.diff_tth_i[3:],
+                                                          plot=True)
+
+
+Here, we have chosen ``h_lines[3:]`` to ignore the first three since they don't
+contain peaks. We also add ``plot=True`` so see the real time plotting of the
+fits.
+
+The output for the last fit looks as follows:
+
+.. figure:: figs/006_qcalib_fit.png
+
+For each pair of adjacent lines, we fit a cross-correlation (convolve the two
+curves together) and fit the point of maximum correlation to a Gaussian. The
+point of maximum correlation is where the curves have shifted.
+
+In this case ``tth_per_step=0.0172`` with a standard deviation of
+``tth_per_step_std=0.0002538``. That's about a ``1.48%`` error.  Since we
+averaged 47 points and if we assume these measurements to be independent, the
+mean is expected to roughly have a ``1.48/np.sqrt(47)=.21%`` error.
+
+
+If we run a crude plot, by shifting versus pixel:
+
+.. code-block:: python
+
+    plt.figure(3);
+    plt.clf()
+    tth = np.asarray(df.diff_tth_i)
+    tth0 = tth[0]
+    chan_pos = np.arange(n_chips*n_chans)
+    for tth, h_line in zip(tth, h_lines):
+        step = int((tth-tth0)/tth_per_step)
+        plt.semilogy(chan_pos - step, h_line)
+
+    plt.xlim(500, 1822)
+    xlabel("pixel", size=40)
+    ylabel("intensity", size=40)
+
+We see the following:
+
+.. figure:: figs/007_qcalib_shift_plot.png
+
+
+
+Alternatives
+~~~~~~~~~~~~
+
+It may be possible to have this calibration working using a Hough transform
+(suggested by Thomas Caswell; see in scikit-image). This could be investigated
+in the future.
