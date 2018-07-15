@@ -13,7 +13,7 @@ matrix:
 
 install:
   - pip install -r requirements.txt
-  - pip install -r test-requirements.txt
+  - pip install -r requirements-dev.txt
   - pip install codecov
 
 script:
@@ -21,7 +21,6 @@ script:
     if [ $BUILD_DOCS ]; then
       set -e
       pushd docs;make html;popd;
-      pip install doctr
       doctr deploy --deploy-repo NSLS-II/NSLS-II.github.io --deploy-branch-name master GeRM
     fi
   - flake8 $TRAVIS_BUILD_DIR/pygerm
