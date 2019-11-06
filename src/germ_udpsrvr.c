@@ -24,7 +24,8 @@
 
 
 //event data buffer for a frame
-uint16_t evtdata[1000000000];
+// set to as big of buffer as possible without segfault
+uint16_t evtdata[22000000000];
 //uint32_t evtdata[20000000];
 
 const char *GIGE_ERROR_STRING[] = { "",
@@ -71,14 +72,13 @@ gige_reg_t *gige_reg_init(uint16_t reb_id, char *iface)
 
     // IP Address based off of ID
     sprintf(ret->client_ip_addr, "%s.%01i", GIGE_CLIENT_IP, reb_id);
-
+    printf("%s\n", ret->client_ip_addr);
     // Recv socket
     ret->sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (ret->sock == -1) {
         perror(__func__);
         return NULL;
     }
-
     // Recv Port Setup
     bzero(&ret->si_recv, sizeof(ret->si_recv));
     ret->si_recv.sin_family = AF_INET;
@@ -89,7 +89,7 @@ gige_reg_t *gige_reg_init(uint16_t reb_id, char *iface)
         ret->si_recv.sin_addr.s_addr = iface_addr->sin_addr.s_addr;
     }
     else {
-        //fprintf(stderr, "%s: listening on any address\n", __func__);
+        fprintf(stderr, "%s: listening on any address\n", __func__);
         ret->si_recv.sin_addr.s_addr = htonl(INADDR_ANY);
     }
 
@@ -316,14 +316,14 @@ long int time_elapsed(struct timeval time_i, struct timeval time_f)
 
 
 
-uint gige_data_recv(gige_data_t *dat, uint16_t *data)
+uint64_t gige_data_recv(gige_data_t *dat, uint16_t *data)
 {
     struct sockaddr_in cliaddr;
     struct timeval tvBegin, tvEnd;
     socklen_t len;
     uint16_t mesg[4096];
     ssize_t n = 0;
-    uint total_sz = 0, total_data = 0;
+    uint64_t total_sz = 0, total_data = 0;
     uint32_t first_packetnum, packet_counter;
     uint src = 0, dest =0 , cnt = 0, end_of_frame = 0, start_of_frame = 0;
     uint i = 0;
@@ -417,8 +417,10 @@ int main(void)
 {
     int rc = 0;
     uint32_t value;
-    gige_reg_t *reg = gige_reg_init(1, NULL);
-    gige_data_t *dat = gige_data_init(1, NULL);
+    // replace 150 with the last number in IP address
+    // also see gige.h for the rest
+    gige_reg_t *reg = gige_reg_init(150, NULL);
+    gige_data_t *dat = gige_data_init(150, NULL);
     int i,checkval,chkerr=0;
     FILE *fp;
     struct timeval tvBegin, tvEnd;
