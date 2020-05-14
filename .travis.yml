@@ -1,16 +1,29 @@
 language: python
 
+env:
+  global:
+    # Doctr deploy key for NSLS-II/GeRM
+    - secure: "lWR3Cp9f+GOPsyItCu9AKXF5YQGiNeQfH9MpZePabKGlCF+Zq9DtTUjXdZiNyue5I2s+W+Hs99lwUdlRZWahg/Nxe29zbf3k4xfNezwA1qbCwxnZNpPDK35h2VLWmx9p1BzkQSmGeqRD6AnPD4Y291bvc3FSbxQX1ZHA22ndcLftmKWlT99hcqVWZrxOEDz22quwYFI+QcyajIBcHg9o30f9Hnzrm32t2yPmGWy0zJFgXpmAs/sC2WGloG1/FFQ7XtLKeT58r0an9pETDkGF+99olx6aBO4xF9RNb/RLJKrt0um8hl1DZQAXghqN3QK0JAntqj6CN1OqqKYo2xCYTNpaQOBpfRxKIJu3Lz/yHL86bIbB7dCr8C4Vpr57i+w7NPPcKqylgno8T+UAxZtK7Dh5kL9dH+yjT5rsCvnUsEQ2AIucyPPQHeLsD2dtlcuYA/ZWdcV1yoXQID/1mXWK7Wb+lysn8GZi5TD44Ievu1508eA+SvAv0shdrHNxNYO8gb+ZRWIwwD02rS/BUGIIF9e4Xt/jBDzX8nThf1yU4lCyOv/kC7yaAwpz5BXy3BcN7KwUg8lAY6B6jnPlWW9s9B8el72MnUHY51Hg5TyJiEPD94ubdM3C4adqEL/G7mFHtTfRVi3iEf3o0IKwqwWkHLoj17Zv/olu4GpFCNype58="
+
 matrix:
   fast_finish: true
   include:
     - python: 3.6
+      env: BUILD_DOCS=1
 
 install:
   - pip install -r requirements.txt
-  - pip install -r test-requirements.txt
+  - pip install -r requirements-dev.txt
   - pip install codecov
+  - pip install -e .
 
 script:
+  - |
+    if [ $BUILD_DOCS ]; then
+      set -e
+      pushd docs;make html;popd;
+      doctr deploy --deploy-repo NSLS-II/NSLS-II.github.io --deploy-branch-name master GeRM
+    fi
   - flake8 $TRAVIS_BUILD_DIR/pygerm
   - coverage run run_tests.py
   - coverage report -m

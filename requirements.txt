@@ -1,5 +1,5 @@
 h5py
 numpy
 databroker
-zmq
+pyzmq
 dask
